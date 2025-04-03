@@ -49,4 +49,4 @@ venv.bak/
 *.sqlite3
 
 # Logs
-*.log 
+*.log data/
