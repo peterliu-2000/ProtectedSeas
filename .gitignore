@@ -50,3 +50,4 @@ venv.bak/
 
 # Logs
 *.log data/
+MLflow.ipynb
