@@ -1,7 +1,7 @@
 **Discovery & Thoughts**
 
 1. Trajectory plots & vanilla XGBoost on type classification indicate we can sensibly aggregate some types into one type:
-* cargo ship & tanker very similar: aggregate
+* cargo ship & tanker: aggregate
 * tug & towing: aggregate
 
 
