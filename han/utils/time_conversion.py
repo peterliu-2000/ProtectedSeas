@@ -21,4 +21,3 @@ def str_time(t:int) -> tuple:
     s = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(t))
     return tuple(s.split(" "))
     
-print(parse_time("2025-01-05", "16:07:00"))
