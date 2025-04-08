@@ -1,3 +1,13 @@
+## April 8, W2
+
+#### Objectives
+1. Perform some EDAs on vessel size
+2. Data Cleaning: Dig deeper into dataset relationship, and try using Sam's method on dataset cleaning: i.e. only find ais-radar track pairs with the most number of detection points
+3. Look into vessel activity (distinguish from type), currently three main types of interests: _in transit, fishing, leisure_
+4. Work on the tagger application; perhaps establish a model to predict transit vs not transit? Consider some extent of hand-labelling thru the tagger?
+5. (If we get our hands on sum_stats functions): Look into it and try it on tracks
+
+
 ## April 5, W1
 
 [Trajectory Viewer](peter/tracks_viewer.ipynb): different vessel type track viz
