@@ -18,9 +18,23 @@ class ProgramData():
         # track row indecies for filtered observations. Initially set to none.
         self.filter_idx = None
         
+    def __len__(self):
+        return len(self.tracks)
         
     def get_track(self, index):
         return self.tracks.iloc[index]
+    
+    def save_track(self, row:pd.Series, index):
+        self.tracks.iloc[index] = row
+        
+    def save_to_file(self, filename):
+        """
+        Save the modified track data to csv file
+
+        Args:
+            filename:
+        """
+        self.tracks.to_csv(filename)
         
     def get_trajectory(self, track_id):
         """
