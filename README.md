@@ -30,3 +30,11 @@ New features that might be promising:
 
 * Data requires cleaning ... need to talk abt methods
 * Extract more info from notes?
+
+#### Labeling Application
+
+* I wrote an application (via Python's Tkinter GUI) for visualizing vessel trajectories and modifying the tags in our tagged data.
+* Upon investigating the tags, some activity tags appear to be incorrect. (A fishing boat in transit is tagged fishing_c rather than transit.)
+* Labels that reflects vessel activities may be more informative for avtivity type classification.
+* This application can be later expanded for labeling vessel types, providing additional data for training / validating the vessel type classifier.
+
