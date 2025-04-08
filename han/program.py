@@ -431,7 +431,7 @@ class FilePopUp(AppWindow):
         self.refresh()
         
     def close_window(self):
-        if self.detections_path is None or self.track_path is None:
+        if not self.detections_path or not self.track_path:
             messagebox.showerror(title="Some Files Are Missing!", message= "Some Required Files Are Missing.")
             return
         
@@ -554,32 +554,6 @@ class DataWindow(AppWindow):
         self.parent.data_control_window = None
         self.destroy()
     
-            
-        
-        
-            
-        
-        
-        
-
-        
-
-    
-        
-        
-            
-        
-    
-
-
-
-
-
-
-
-
-
-
 ##############################
 ###### Main Application ######
 ##############################
@@ -746,7 +720,6 @@ class MainApp(tk.Tk):
         
     # Filter Controls:
     def apply_filter(self, filter):
-        print(filter)
         if self.data is None: return
         if filter is None:
             self.data.unset_filter()
@@ -762,18 +735,13 @@ class MainApp(tk.Tk):
         
     def quit_app(self):
         self.destroy()
-        
-        
     
-def program():
+    
+    
+    
+def launch():
     app = MainApp()
     app.mainloop()
     
-
-
-
-
-
 if __name__ == "__main__":
-    program()
-    pass
+    launch()
