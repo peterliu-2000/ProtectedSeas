@@ -24,9 +24,6 @@ class VesselTypeAggregator:
             df: dataframe with 'type_m2' column
         """
 
-        # Define vessel type categories
-        
-        # Create a new column with default values as the original values
         df['type_m2_agg'] = df['type_m2']
         
         # Apply the mapping only for keys that exist in the mapping
