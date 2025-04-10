@@ -53,3 +53,4 @@ venv.bak/
 MLflow.ipynb
 mlartifacts/
 mlruns/
+.Rproj.user

@@ -7,6 +7,11 @@
 4. Work on the tagger application; perhaps establish a model to predict transit vs not transit? Consider some extent of hand-labelling thru the tagger?
 5. (If we get our hands on sum_stats functions): Look into it and try it on tracks
 
+#### Discovery 
+* radar tracks correspond to 16591 ais tracks, but only 15345 are present in `ais_tracks` provided. Examples of some missing assoc_id: [37366600, 44282945, 38366686]
+
+
+
 
 ## April 5, W1
 
