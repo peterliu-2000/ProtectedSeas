@@ -11,6 +11,12 @@ class VesselTypeAggregator:
             'towing_ship': 'tug/tow',
             'fishing_boat': 'fishing_boat',
             'commercial_fishing_boat': 'fishing_boat',
+            'military_ship': 'military_ship',
+            'class_b':'class_b',
+            'passenger_ship': 'passenger_ship',
+            'pleasure_craft': 'pleasure_craft',
+            'sailboat': 'pleasure_craft',
+            'search_and_rescue_boat': 'other',
             'pilot_boat': 'other',
             'high_speed_craft': 'other',
             'law_enforcement_boat': 'other',
@@ -24,11 +30,4 @@ class VesselTypeAggregator:
             df: dataframe with 'type_m2' column
         """
 
-        df['type_m2_agg'] = df['type_m2']
-        
-        # Apply the mapping only for keys that exist in the mapping
-        for original, aggregated in self.type_mapping.items():
-            df.loc[df['type_m2'] == original, 'type_m2_agg'] = aggregated
-            
-        return df
-
+        df['type_m2_agg'] = df['type_m2'].map(self.type_mapping).fillna('other')
