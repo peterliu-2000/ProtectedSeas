@@ -8,17 +8,22 @@ from tkinter import filedialog as fd
 from tkinter import messagebox
 from tkinter import ttk
 
-
-
 from utils.map_display import *
 from utils.data_ops import *
 from utils.time_conversion import str_time
 from program_data import *
+from utils.constants import *
 
 import pandas as pd
 import numpy as np
+import time
 
 pd.options.mode.copy_on_write = True
+
+
+# Default Paths for quick loading
+default_track = "../data/tracks_tagged_modified.csv"
+default_detections = "../data/detections_tagged_cached.csv"
 
 #########################
 ###### GUI Helpers ######
@@ -227,7 +232,7 @@ class TrackTags(AppFrame):
         
         # Tags and tag names:
         tags = ["transit", "loiter", "overnight", "cleanup", "fishing_c",
-                "fishing_r", "research", "diving", "repairs", "distress", "other"]
+                "fishing_r", "research", "diving", "repairs", "distress", "other", "valid"]
         self.tags = {"transit" : "Transit",
                      "loiter" : "Loiter",
                      "overnight" : "Overnight Loiter",
@@ -238,17 +243,23 @@ class TrackTags(AppFrame):
                      "diving" : "Diving",
                      "repairs" : "Repairs",
                      "distress" : "Distress",
-                     "other" : "Other"}
+                     "other" : "Other",
+                     "valid" : "Valid"}
         
         # Create variables for Checkboxes
-        self.variables = dict.fromkeys(set(tags), tk.IntVar(self, 0))
+        self.variables = dict()
         for k in tags:
             self.variables[k] = tk.IntVar(self, value = 0)
             
         # Create widgets for Checkboxes
-        self.checkboxes = dict.fromkeys(set(tags), None)
+        self.checkboxes = dict()
         for k in tags:
             self.checkboxes[k] = checkbutton(self, self.tags[k], self.variables[k])
+            
+        # Create selection box for vessel type
+        self.type = tk.StringVar(value = "Select Vessel Type")
+        self.menu = ttk.Combobox(self, textvariable=self.type)
+        self.menu["values"] = ["Select Vessel Type"] + TYPE_NAMES[1:]
             
         # Render Page Layout:
         height = 6
@@ -258,8 +269,10 @@ class TrackTags(AppFrame):
                 grid(self.checkboxes[k], row = r, column = 0, sticky = "w")
             else: # i // height == 1:
                 grid(self.checkboxes[k], row = r, column = 1, sticky = "w", padx = 10)
+                
+        grid(self.menu, row = 7, column = 0, columnspan = 2, sticky = "nsew")
         
-        configure_grid(self, row_weights=[1,1,1,1,1,1,1], col_weights=[1,1])
+        configure_grid(self, row_weights=[1,1,1,1,1,1,1,1], col_weights=[1,1])
 
     def refresh(self):
         # Pull tag data from the current data row
@@ -267,9 +280,15 @@ class TrackTags(AppFrame):
         for k,v in self.variables.items():
             v.set(data[k])
             
+        # Pull vessel type data:
+        vessel_type = None if pd.isna(data["type_m2_agg"]) else data["type_m2_agg"]
+        self.type.set(LOOKUP_TYPE_code_to_name_app[vessel_type])
+            
     def save(self):
         for k,v in self.variables.items():
             self.parent.current_track[k] = v.get()
+            
+        self.parent.current_track["type_m2_agg"] = LOOKUP_TYPE_name_to_code_app[self.type.get()]
         
 class TrackNotes(AppFrame):
     def __init__(self, container, **kwargs):
@@ -340,6 +359,7 @@ class TrackMap(AppFrame):
         Overlays a trajectory onto the map. Trajectory should be a 2-D array of
         Shape (N, 2), where each row has a lat long record.
         """
+        if len(trajectory) < 2: return
         self.map_widget.set_path(list(map(tuple, trajectory)), width = 4)
         start_lat, start_long = tuple(trajectory[0])
         end_lat, end_long = tuple(trajectory[-1])
@@ -381,7 +401,7 @@ class FilePopUp(AppWindow):
         self.track_path = self.parent.track_path
         self.detections_path = self.parent.detections_path     
         
-        self.protocol("WM_DELETE_WINDOW", self.close_window)   
+        self.protocol("WM_DELETE_WINDOW", self.close_window)  
         
         # Render GUI Elements
         self.labels = [
@@ -446,98 +466,163 @@ class DataWindow(AppWindow):
         super().__init__(parent, takefocus=takefocus)
         self.title("Data Controls")
         self.resizable(False, False)
-        self.geometry("500x100")
+        self.geometry("600x200")
         self.configure(background='white')
         
-        # Possible names for filter tags
-        self.names = ["None", 'Transit', 'Loiter', 'Overnight Loiter', 'Cleanup', 'Fishing Comm.', 'Fishing Rec.', 'Research', 'Diving', 'Repairs', 'Distress', 'Other']
-        # This variable should corresponds to the display name
-        self.filter_name = tk.StringVar(value="None")
+        # Display Names for activity and type
+        self.act_display_name = tk.StringVar(value="All")
+        self.type_display_name = tk.StringVar(value="All")
         
-        # Render GUI Elements
-        self.labels = [
-            label(self, "Go to Entry: "),
-            label(self, "Set Filter: ")
+        # Go To Entry Controls
+        self.goto_label = label(self, "Go to Entry: ")
+        grid(self.goto_label, row = 0, column = 0, sticky = "w")
+        
+        self.goto_textbox = tk.Entry(self)
+        grid(self.goto_textbox, row = 0, column = 1, sticky = "nsew", columnspan = 2)
+        
+        self.goto_button = button(self, "Go", self.go_to)
+        grid(self.goto_button, row = 0, column = 3, sticky = "nsew")
+        
+        # Data Filtering Texts:
+        self.left_labels = [
+            label(self, "Data Filters"),
+            label(self, "By Activity"),
+            label(self, "By Vessel Type"),
+            
         ]
-        for i, l in enumerate(self.labels):
+        for i, l in enumerate(self.left_labels):
             grid(l, row = i + 1, column = 0, sticky = "w")
             
+        self.counter = label(self, "Nan / Nan")
+        grid(self.counter, row = 1, column = 3, sticky = "e")
+        
+        # Filter Dropdown Menus: 
+        self.act_menu = ttk.Combobox(self, textvariable=self.act_display_name)
+        self.act_menu["values"] = ACT_NAMES
+        self.act_menu.current(0)
+        grid(self.act_menu, row = 2, column = 1, sticky = "nsew", columnspan = 3)
+            
+        self.type_menu = ttk.Combobox(self, textvariable=self.type_display_name)
+        self.type_menu["values"] = TYPE_NAMES
+        self.type_menu.current(0)
+        grid(self.type_menu, row = 3, column = 1, sticky = "nsew", columnspan = 3)
+        
+        # Confidence Filtering Options
+        self.confidence_text = [
+            label(self,"Confidence Low:"),
+            label(self,"Confidence High:")
+        ]
+        self.confidence_entry = [tk.Entry(self), tk.Entry(self)]
+        for i, (e, t) in enumerate(zip(self.confidence_entry, self.confidence_text)):
+            grid(t, row = 4 + i, column = 0, sticky = "w")
+            grid(e, row = 4 + i, column = 1, sticky = "nsew")
+        
+        # Other Filtering Options and Checkboxes
+        self.filter_options = {
+            "valid_only" : "Show Valid Tracks",
+            "has_notes" : "Show Tracks w/ Notes",
+            "no_tags" : "Show Untagged",
+            "duplicate_tags" : "Show Duplicate Tags"
+        }
+            
+        self.cbox_vars = dict()
+        self.cbox_buttons = dict()
+        for elet in self.filter_options:
+            self.cbox_vars[elet] = tk.IntVar(self, value = 0)
+            self.cbox_buttons[elet] = checkbutton(self, self.filter_options[elet], self.cbox_vars[elet])
+            
+        height = 2
+        for i,k in enumerate(["valid_only", "has_notes", "no_tags", "duplicate_tags"]):
+            row = 4 + (i // 2)
+            col = 2 + (i % 2)
+            grid(self.cbox_buttons[k], row = row, column = col, sticky = "w")
+            
+        # Bottom Buttons 
         self.controls = [
-            button(self, "Prev. Untagged", self.parent.prev_untagged),
             button(self, "Prev Record", self.parent.prev),
             button(self, "Next Record", self.parent.next),
-            button(self, "Next Untagged", self.parent.next_untagged)
+            button(self, "Clear Filter", self.clear_filter),
+            button(self, "Apply Filter", self.apply_filter)
         ]
         for i, b in enumerate(self.controls):
-            grid(b, row = 0, column = i, sticky = "nsew")
+            grid(b, row = 6, column = i, sticky = "nsew")
             
-        self.buttons_sides = [
-            button(self, "Go", self.go_to),
-            button(self, "Close Window", self.close_window)
-        ]
-        for i, b in enumerate(self.buttons_sides):
-            grid(b, row = i + 1, column = 3, sticky = "nsew")
-        
-        # Selection Box for Filter
-        self.selection = ttk.Combobox(self, textvariable=self.filter_name)
-        self.selection["values"] = self.names
-        grid(self.selection, row = 2, column = 1, sticky = "nsew", columnspan = 2)
-        self.selection.bind("<<ComboboxSelected>>", self.apply_filter)
-        
-        # Entry Box for Seek
-        self.textbox = tk.Entry(self)
-        grid(self.textbox, row = 1, column = 1, sticky = "nsew", columnspan = 2)
-        
-        configure_grid(self, row_weights=[1,1,1,1], col_weights=[1,1,1,1])
+        configure_grid(self, row_weights=[1,1,1,1,1,1,1], col_weights=[1,1,1,1])
         self.protocol("WM_DELETE_WINDOW", self.close_window)
-        
-    def apply_filter(self, _event):
-        """
-        Apply a given filter
-        """
-        # First, lookup the corresponding codename for the filter
-        lookup_table = {
-            "None" : None,
-            "Transit" : "transit",
-            "Loiter" : "loiter",
-            "Overnight Loiter" : "overnight",
-            "Cleanup" : "cleanup",
-            "Fishing Comm." : "fishing_c",
-            "Fishing Rec." : "fishing_r",
-            "Research" : "research",
-            "Diving" : "diving",
-            "Repairs" : "repairs",
-            "Distress" : "distress",
-            "Other" : "other"
-        }
-        filter = lookup_table[self.selection.get()]
-        # call main process's apply filter function
-        self.parent.apply_filter(filter)
         self.refresh()
         
-    def refresh(self):
-        # First read the filter information from the parent process
-        filter = self.parent.filter
-        lookup_table = {"transit" : "Transit",
-                     "loiter" : "Loiter",
-                     "overnight" : "Overnight Loiter",
-                     "cleanup" : "Cleanup", 
-                     "fishing_c" : "Fishing Comm.",
-                     "fishing_r" : "Fishing Rec.",
-                     "research" : "Research",
-                     "diving" : "Diving",
-                     "repairs" : "Repairs",
-                     "distress" : "Distress",
-                     "other" : "Other",
-                     None : "None"}
-        self.filter_name.set(value = lookup_table[filter])
+    def apply_filter(self, _event = None):
+        """
+        Do some preliminary checks with user input and then send the
+        filtering data to the main application
+        """
+        # First, query all the filter menus to get the codes for filters
+        act_code = LOOKUP_ACT_name_to_code[self.act_menu.get()]
+        type_code = LOOKUP_TYPE_name_to_code[self.type_menu.get()]
         
+        conf_lo = self.confidence_entry[0].get()
+        conf_hi = self.confidence_entry[1].get()
+        
+        valid = self.cbox_vars["valid_only"].get()
+        notes = self.cbox_vars["has_notes"].get()
+        no_tag = self.cbox_vars["no_tags"].get()
+        dupe = self.cbox_vars["duplicate_tags"].get() 
+    
+        
+        # Do some preliminary check with the entered confidence filter values:
+        try:
+            conf_lo = float(conf_lo) if conf_lo else 0.0
+            conf_hi = float(conf_hi) if conf_hi else 1.0            
+        except ValueError:
+            messagebox.showerror(title="Bad Entry.", message= f"Expects floating point values for confidence.")
+            return
+            
+        if max(conf_lo, conf_hi) > 1.0 or min(conf_lo, conf_hi) < 0.0 or conf_lo >= conf_hi:
+            messagebox.showerror(title="Bad Entry.", message= f"Invalid confidence bounds.")
+            return
+        
+        # Parse the filter values as a dictionary and pass it to main application
+        filter_parameters = dict()
+        filter_parameters["tag"] = act_code
+        filter_parameters["type"] = type_code
+        filter_parameters["has_notes"] = bool(notes)
+        filter_parameters["no_tags"] = bool(no_tag)
+        filter_parameters["duplicate_tags"] = bool(dupe)
+        filter_parameters["valid_only"] = bool(valid)
+        filter_parameters["confidence_low"] = conf_lo
+        filter_parameters["confidence_high"] = conf_hi
+        
+        self.parent.apply_filter(filter_parameters)
+        
+        self.refresh()
+        
+    def clear_filter(self, _event = None):
+        self.parent.clear_filter()
+        self.refresh()
+        
+        
+    def refresh(self):
+        # Load the filter configuration from the application
+        params = self.parent.filter_parameters
+        # Obtain string representations of the parameters
+        self.act_display_name.set(LOOKUP_ACT_code_to_name[params["tag"]])
+        self.type_display_name.set(LOOKUP_TYPE_code_to_name[params["type"]])
+        self.confidence_entry[0].delete(0, tk.END)
+        self.confidence_entry[1].delete(0, tk.END)
+        self.confidence_entry[0].insert(tk.END, str(params["confidence_low"]))
+        self.confidence_entry[1].insert(tk.END, str(params["confidence_high"]))
+        
+        for k, v in self.cbox_vars.items():
+            v.set(params[k])
+            
+        update_label(self.counter, f"{self.parent.filter_num_obs} / {self.parent.num_obs}")
+
     def go_to(self):
         """
         Triggers application level index seeking function
         """
-        text_string = self.textbox.get().strip()
-        self.textbox.delete(0, tk.END)
+        text_string = self.goto_textbox.get().strip()
+        self.goto_textbox.delete(0, tk.END)
         # Bad Entry
         if not text_string.isnumeric():
             messagebox.showerror(title="Bad Entry.", message= f"Expects a numerical index. Entered '{text_string}'.")
@@ -594,7 +679,10 @@ class MainApp(tk.Tk):
         # Used for observation tracking
         self.idx_obs = None
         self.num_obs = None
-        self.filter = None
+        
+        # Filter Parameters
+        self.filter_parameters = FILTER_DEFAULT
+        self.filter_num_obs = None
         
         # Information to be added in the refresh function.
         self.current_track = None
@@ -603,6 +691,33 @@ class MainApp(tk.Tk):
         # Windows
         self.data_control_window = None
         self.file_load_window = None
+        
+        # Bind Hotkeys:
+        self.bind("<Left>", self.prev)
+        self.bind("<Right>", self.next)
+        
+        # Try loading from the default path
+        self.load_from_default()
+       
+       
+    def test(self, event):
+        print(event)
+            
+    def load_from_default(self):
+        # Try loading from default
+        try:
+            data = ProgramData(default_track, default_detections)
+        except Exception:
+            print("Data cannot be loaded from default path, please manually load the data")
+            return
+        else:
+            self.data = data
+            self.track_path = default_track
+            self.detections_path = default_detections
+            self.idx_obs = 0
+            self.num_obs = len(self.data)
+            self.filter_num_obs = self.num_obs
+            self.refresh()
 
         
     # Main Application Routines (May be triggered by application frame events)
@@ -629,6 +744,7 @@ class MainApp(tk.Tk):
         self.data = ProgramData(self.track_path, self.detections_path)
         self.idx_obs = 0
         self.num_obs = len(self.data)
+        self.filter_num_obs = self.num_obs
         print("File Import Successful")
         self.refresh()
         
@@ -648,7 +764,12 @@ class MainApp(tk.Tk):
         """
         if self.data is None: return
         self.current_track = self.data.get_track(self.idx_obs)
-        self.current_trajectory = self.data.get_trajectory(self.current_track["id_track"])
+        try:
+            self.current_trajectory = self.data.get_trajectory(self.current_track["id_track"])
+        except RuntimeWarning as e:
+            # Use some default lat long instead...
+            self.current_trajectory = [[37.432, -122.170]]
+            print(e)
         
         self.track_info_frame.refresh()
         self.track_tags_frame.refresh()
@@ -668,13 +789,16 @@ class MainApp(tk.Tk):
             return
         self.track_tags_frame.save()
         self.track_notes_frame.save()
-        # Propagate the update to the data frame
+        # Propagate the update to the data frame. (Copy on write principle)
         self.data.save_track(self.current_track, self.idx_obs)
         
     def save_to_file(self):
         if self.data is None: 
             messagebox.showerror(title = "No Data Loaded.", message = "Please Load Data Files First.")
             return
+        
+        # First make sure to push any unsaved changes to dataframe
+        self.save()
         
         def get_filename():
             """
@@ -696,42 +820,37 @@ class MainApp(tk.Tk):
         self.idx_obs = index
         self.refresh()
         
-    def prev(self):
+    def prev(self, _event = None):
         if self.data is None: return
         self.save()
         self.idx_obs = self.data.prev(self.idx_obs)
         self.refresh()
         
-    def next(self):
+    def next(self, _event = None):
         if self.data is None: return
         self.save()
         self.idx_obs = self.data.next(self.idx_obs)
         self.refresh()
         
-    def prev_untagged(self):
-        if self.data is None: return
-        self.idx_obs = self.data.prev_untagged(self.idx_obs)
-        self.refresh()
-        
-    def next_untagged(self):
-        if self.data is None: return
-        self.idx_obs = self.data.next_untagged(self.idx_obs)
-        self.refresh()
         
     # Filter Controls:
-    def apply_filter(self, filter):
+    def apply_filter(self, filter_parameters):
         if self.data is None: return
-        if filter is None:
-            self.data.unset_filter()
-            self.filter = filter
+        # Attempts to set filter
+        if not self.data.set_filter(**filter_parameters):
+            messagebox.showerror(title = "Empty", message = "No tracks satisfy selected filters.")
+            return
         else:
-            try:
-                self.data.set_filter(filter)
-            except:
-                messagebox.showerror(title = "Empty Filter", message = f"No observations satisfy the filter {self.filter}")
-            else:
-                self.filter = filter
+            # Filter set successfully.
+            self.filter_parameters = filter_parameters
+            self.filter_num_obs = self.data.get_filtered_count()
         self.refresh()
+        
+    def clear_filter(self):
+        if self.data is None: return
+        self.filter_parameters = FILTER_DEFAULT
+        self.filter_num_obs = self.num_obs
+        self.data.unset_filter()
         
     def quit_app(self):
         self.destroy()
