@@ -8,23 +8,38 @@ from utils.data_ops import *
 
 class ProgramData():
     def __init__(self, track_filename, trajectory_filename) -> None:
-        # Call data import / processing function
-        self.trajectory = read_and_init_trajectory(trajectory_filename)
-        self.tracks, self.has_tag = read_and_init_label(track_filename)
+        
+        # Import and initialize required data objects:
+        self.tracks = read_and_init_track_df(track_filename)
+        self.detections = read_and_init_detections_df(trajectory_filename)
         
         # Data size statistics
         self.num_tracks = len(self.tracks)
+        self.num_filtered_tracks = self.num_tracks
         
-        # track row indecies for filtered observations. Initially set to none.
-        self.filter_idx = None
+        # A boolean vector corresponding to filtered observations
+        # None -> No filter set.
+        self.filter = None
         
     def __len__(self):
-        return len(self.tracks)
+        """
+        Only returns the number of tracks present. Not the number of detection points
+        """
+        return self.num_tracks
+    
+    def get_filtered_count(self):
+        return self.num_filtered_tracks
         
     def get_track(self, index):
+        """
+        Assumes pandas "copy on write" is enabled. Returns a copy of the track row.
+        """
         return self.tracks.iloc[index]
     
     def save_track(self, row:pd.Series, index):
+        """
+        Assumes pandas "copy on write" is enabled. Saves a row to track data.
+        """
         self.tracks.iloc[index] = row
         
     def save_to_file(self, filename):
@@ -42,105 +57,135 @@ class ProgramData():
         Args:
             track_id
         """
-        traj = get_trajectory(self.trajectory, track_id)
+        traj = get_trajectory(self.detections, track_id)
         if len(traj) == 0:
             raise RuntimeWarning(f"Track id {track_id} returned an empty trajectory record.")
         return traj
     
-    def set_filter(self, tag):
+    # Data Seek Function:
+    
+    def seek_next(self, idx):
         """
-        Filter the dataset according to a specific tag.
+        Get the row index of the next track.
 
         Args:
-            tag
+            idx: row index of the current track
         """
-        try:
-            filter_idxs = filter_tracks(self.tracks, tag)
-        except RuntimeError:
-            raise RuntimeWarning(f"Filter not set as {tag} is not a valid tag.")
+        # If no filter is set, simply return the next observation
+        if self.filter is None:
+            return (idx + 1) % self.num_tracks
+        
+        # If filter is set: Find the next observation with a True Filter.
+        curr = (idx + 1) % self.num_tracks
+        while(curr != idx):
+            if(self.filter[curr]): return curr
+            curr = (curr + 1) % self.num_tracks
+        return idx
+    
+    def seek_prev(self, idx):
+        """
+        Get the row index of the previous track.
+
+        Args:
+            idx: row index of the current track
+        """
+        # If no filter is set, simply return the previous observation
+        if self.filter is None:
+            return (idx - 1) % self.num_tracks
+        
+        # If filter is set: Find the previous observation with a True Filter.
+        curr = (idx - 1) % self.num_tracks
+        while(curr != idx):
+            if(self.filter[curr]): return curr
+            curr = (curr - 1) % self.num_tracks
+        return idx
+    
+    def set_filter(self, tag = None, type = None,
+                   has_notes = False, no_tags = False,
+                   duplicate_tags = False, valid_only = False,
+                   confidence_low = -np.inf, confidence_high = np.inf):
+        """
+        Filter the observations according to the following options:
+
+        Args:
+            tag: The activity tag for the vessel. Defaults to None (All).
+            type: The type for the vessel. Defaults to None (All).
+            has_notes: Only show observations with a note. Defaults to False.
+            no_tags: Only show observations with at no activity tag. Defaults to False.
+            duplicate_tags: Only show observations with more than one activity tag checked. Defaults to False.
+            valid_only: Only show valid observations. Defaults to False.
+            confidence_low: Confidence Filter Low threshold. Defaults to -np.inf.
+            confidence_high: Confidence Filter High threshold. Defaults to np.inf.
+            
+        Returns:
+            True if filter is set successfully, False otherwise.
+        """
+        # Initial data_filter
+        data_filter = [True] * self.num_tracks
+        # Filter according to activity tags
+        if tag is not None and tag in ACTIVITY_TAGS:
+            tag_filter = univariate_filter(self.tracks, tag, lambda x: x > 0)
+            data_filter = np.logical_and(data_filter, tag_filter)
+        # Filter according to vessel type tags
+        if type is not None:
+            type_filter = univariate_filter(self.tracks, "type_m2_agg", lambda x: x == type)
+            data_filter = np.logical_and(data_filter, type_filter)
+        # Filter according to tags:
+        if duplicate_tags and no_tags:
+            return False # Two flags cannot be set simultaneously
+        if duplicate_tags:
+            data_filter = np.logical_and(filter_duplicate_tags(self.tracks), data_filter)
+        if no_tags:
+            data_filter = np.logical_and(filter_no_tags(self.tracks), data_filter)
+        # Filter according to other attributes:
+        if has_notes:
+            note_filter = univariate_filter(self.tracks, "notes", lambda x: not pd.isna(x) and len(x.strip()) > 0)
+            data_filter = np.logical_and(data_filter, note_filter)
+        if valid_only:
+            valid_filter = univariate_filter(self.tracks, "valid", lambda x: x)
+            data_filter = np.logical_and(data_filter, valid_filter)
+        # Filter according to confidence
+        conf_filter = univariate_filter(self.tracks, "confidence",
+                                        lambda x: x >= confidence_low and x < confidence_high)
+        data_filter = np.logical_and(data_filter, conf_filter)
+        
+        # determine if the filter is valid:
+        filtered_obs = np.sum(data_filter)
+        if filtered_obs > 0:
+            self.filter = data_filter
+            self.num_filtered_tracks = filtered_obs
+            return True
         else:
-            if len(filter_idxs) == 0:
-                raise RuntimeWarning(f"Filter not set as no tracks has {tag} set to True.")
-            self.filter_idx = filter_idxs
+            return False # No observations match.
             
     def unset_filter(self):
         """
         Remove the tag filter
         """
-        self.filter_idx = None
+        self.filter = None
+        self.num_filtered_tracks = self.num_tracks
         
     def next(self, idx):
         """
-        Get the row index of the next track, subject to the tag filter
+        API function for seek_next
 
         Args:
             idx: row index of the current track
         """
-        if self.filter_idx is None:
-            return (idx + 1) % self.num_tracks
-        else:
-            tmp_idxs = [i for i in self.filter_idx if i > idx]
-            # Wrap arround
-            if len(tmp_idxs) == 0: return self.filter_idx[0]
-            else: return min(tmp_idxs)
+        return self.seek_next(idx)
             
     def prev(self, idx):
         """
-        Get the row index of the previous track, subject to the tag filter
+        API function for seek_prev
 
         Args:
             idx: row index of the current track
         """
-        if self.filter_idx is None:
-            return (idx - 1) % self.num_tracks
-        else:
-            tmp_idxs = [i for i in self.filter_idx if i < idx]
-            # Wrap arround
-            if len(tmp_idxs) == 0: return self.filter_idx[-1]
-            else: return max(tmp_idxs)
+        return self.seek_prev(idx)
             
-    def next_untagged(self, idx):
-        """
-        Get the row index of the next untagged track.
 
-        Args:
-            idx: row index of the current track
-        """
-        if self.filter_idx is not None:
-            print("A tag filter has set. Using next instead.")
-            return self.next(idx)
-        
-        curr = (idx + 1) % self.num_tracks
-        while(curr != idx):
-            if(not self.has_tag[curr]): return curr
-            curr = (curr + 1) % self.num_tracks
-        print("All tracks have been completely tagged.")
-        return idx
-    
-    def prev_untagged(self, idx):
-        """
-        Get the row index of the previous untagged track.
-
-        Args:
-            idx: row index of the current track
-        """
-        if self.filter_idx is not None:
-            print("A tag filter has set. Using prev instead.")
-            return self.prev(idx)
-        
-        curr = (idx - 1) % self.num_tracks
-        while(curr != idx):
-            if(not self.has_tag[curr]): return curr
-            curr = (curr - 1) % self.num_tracks
-        print("All tracks have been completely tagged.")
-        return idx
-    
-    
 if __name__ == "__main__":
     path1 = '../data/tracks_tagged.csv'
     path2 = '../data/detections_tagged_cached.csv'
     data = ProgramData(path1, path2)
     id = data.tracks.iloc[1]["id_track"]
-    
-    print(data.get_trajectory(data.tracks.iloc[1]["id_track"]))
-    print(data.trajectory[data.trajectory["id_track"] == id])
