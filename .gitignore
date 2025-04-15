@@ -50,7 +50,6 @@ venv.bak/
 
 # Logs
 *.log data/
-MLflow.ipynb
 mlartifacts/
 mlruns/
 .Rproj.user

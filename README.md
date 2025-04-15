@@ -8,10 +8,11 @@
 5. (If we get our hands on sum_stats functions): Look into it and try it on tracks
 
 #### Discovery 
-* radar tracks correspond to 16591 ais tracks, but only 15345 are present in `ais_tracks` provided. Examples of some missing assoc_id: [37366600, 44282945, 38366686]
+* Radar tracks correspond to 16591 ais tracks, but only 15345 are present in `ais_tracks/radar_tracks` provided. Examples of some missing ['id_track', 'assoc_id']: (36979855 , 36979840), (32063462 , 32065809), (31251315, 31251147). A total of 1246 missing
+* Size seems 
 
-
-
+#### Qs
+* More on background algorithm: my understanding is, radar detecting a signal, keeps a log of its tracks, backend algorithm calculates the track summary statistics and feed it to XGBoost model to decide whether the signal is true/false positive
 
 ## April 5, W1
 
