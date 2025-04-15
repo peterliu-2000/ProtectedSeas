@@ -5,6 +5,27 @@
 * Radar tracks correspond to 16591 ais tracks, but only 15345 are present in `ais_tracks/radar_tracks` provided. Examples of some missing ['id_track', 'assoc_id']: (36979855 , 36979840), (32063462 , 32065809), (31251315, 31251147). A total of 1246 missing
 * Size EDAs: less informative than EDAs on vessel type, less clear on which direction to focus on. Also size is very dependent on type of vessel as well. One idea will be to come up with a few different size-bucket (small, medium, large) but this is just kinda like categorizing vessels by type
 * Follow-up on summary statisitcs calculation functions: tried self-implementation but does have (slight) mismatches w. provided radar_tracks 
+* Current vessel type aggregation scheme:
+
+| Original Category              | Aggregated Category   |
+|-------------------------------|------------------------|
+| `tanker_ship`                 | `cargo/tanker`        |
+| `cargo_ship`                  | `cargo/tanker`        |
+| `tug`                         | `tug/tow`             |
+| `towing_ship`                | `tug/tow`             |
+| `fishing_boat`               | `fishing_boat`        |
+| `commercial_fishing_boat`    | `fishing_boat`        |
+| `military_ship`              | `military_ship`       |
+| `class_b`                    | `class_b`             |
+| `passenger_ship`             | `passenger_ship`      |
+| `pleasure_craft`             | `pleasure_craft`      |
+| `sailboat`                   | `pleasure_craft`      |
+| `search_and_rescue_boat`     | `other`               |
+| `pilot_boat`                 | `other`               |
+| `high_speed_craft`           | `other`               |
+| `law_enforcement_boat`       | `other`               |
+| `other`                      | `other`               |
+| `unknown`                    | `other`               |
 
 #### Qs
 * More on background algorithm: my understanding is, radar detecting a signal, keeps a log of its tracks, backend algorithm calculates the track summary statistics and feed it to XGBoost model to decide whether the signal is true/false positive (we will need to implement new-feature-functions, need to think about how can it integrate w/ the existing system)
