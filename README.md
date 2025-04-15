@@ -5,7 +5,7 @@
 * Sailboats: two distinctive behaviors: sails down using motors vs sails up (quite some in the dataset), useful to think about for _activity prediction_
 * Site 45: bay area where pleasure crafts (like sailboats putting down anchor), hence lot of detection points w/ few movements
 * _activity tag_: achor/stop (might be different from loitering)
-* transit vs. travelling in a straight line w/o changing speed 
+* transit vs. travelling in a straight line w/o changing speed
 
 #### Objectives
 
