@@ -27,10 +27,25 @@
 | `other`                      | `other`               |
 | `unknown`                    | `other`               |
 
+
+#### Data Cleaning
+* For tagged data: Removed most unwanted tracks (eg. tracks with notes identifying as false targets, disrupted tracks, and tracks I have significant evidence for being false targets, such as those going inland / thru land.)
+* Tagged most observations with a straight trajectory as transit. (Added about 1k transit tags during data cleaning.) Training a model for transit tags was not necessary since I removed about 4k unwanted observations during preliminary filtering.
+* Tagged many noted tracks with vessel type information to be incorporated into Peter's dataset
+* Tagged some tracks with patterns that I believe could be fishing as the unused tag "repairs." ~100 of such tags.
+
 #### Qs
 * More on background algorithm: my understanding is, radar detecting a signal, keeps a log of its tracks, backend algorithm calculates the track summary statistics and feed it to XGBoost model to decide whether the signal is true/false positive (we will need to implement new-feature-functions, need to think about how can it integrate w/ the existing system)
+* There are a lot of trajectories in site 45 (I believe thousands) where I see a tracked object lingering / not moving for a very long period of time. (Sometimes lasting for almost a day.) Should I tag these activities as loitering or ignore these observations all together? (Since I cant verify if these are false targets or not.)
+* Site 45 also has many kayaking / sailing activities going on. I think it is most appropirate to tag kayaking activities as loitering.
+* Songyu: The tagged data has a lot of observations tagged as "kayaks" or "sailboat". Maybe incorporate these observations to Peter's vessel type dataset? For now, I have tagged kayaks as sailboats, but let me know a more approporate type is required.
 
 #### Next Steps
+* For tagged vessel data: I plan to remove all tracks with less than 50 detection points. Such tracks are not very informative on activities and some are likely to be false targets. (I have seen many of such tracks going through land, and yes I removed all the AVES)
+* For longer tracks, it may be helpful to break it down into mutliple segments. Most statsitical / ML models expects inputs of fixed dimensions, and the great variation we have in track lengths may need to be considered when we eventually start modeling on the detection data. Splitting detections into segments could also help with potential class imbalance issues later down the line.
+* Possibly investigate the transit tags a bit more using the summary statistics. My current vessel tracker app does not display the summary statistics: I could have falsely tagged some fishing / loitering as transit just because they appear to be a straight line on the map. Asking Sam about the typical vessel transit speed could help as well.
+
+
 
 ...
 
