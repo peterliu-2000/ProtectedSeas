@@ -22,7 +22,7 @@ pd.options.mode.copy_on_write = True
 
 
 # Default Paths for quick loading
-default_track = "../data/tracks_tagged_modified.csv"
+default_track = "../data/tracks_tagged_v1_s.csv"
 default_detections = "../data/detections_tagged_cached.csv"
 
 #########################
@@ -169,8 +169,11 @@ class TrackInfo(AppFrame):
         super().__init__(container, **kwargs)
         
         self.title = label(self, "Track Information")
-        grid(self.title, row = 0, column = 0, columnspan= 2, sticky="w")
+        grid(self.title, row = 0, column = 0, sticky="w")
         
+        self.button = button(self, "Show More Info", self.show_more)
+        grid(self.button, row = 0, column = 1, sticky = "nse")
+
         # Define static text labels:
         self.static_text = [
             label(self, "Observation: "),
@@ -221,6 +224,9 @@ class TrackInfo(AppFrame):
         
         for k, v in self.dynamic_text.items():
             update_label(v, obtain_new_text(k))
+            
+    def show_more(self):
+        self.parent.open_track_summary()
                 
 
 class TrackTags(AppFrame):
@@ -228,34 +234,27 @@ class TrackTags(AppFrame):
         super().__init__(container, **kwargs)
         
         self.title = tk.Label(self, text = "Track Tags")
-        grid(self.title, row = 0, column = 0, columnspan= 2, sticky="w")
+        grid(self.title, row = 0, column = 0, sticky="w")
         
-        # Tags and tag names:
-        tags = ["transit", "loiter", "overnight", "cleanup", "fishing_c",
-                "fishing_r", "research", "diving", "repairs", "distress", "other", "valid"]
-        self.tags = {"transit" : "Transit",
-                     "loiter" : "Loiter",
-                     "overnight" : "Overnight Loiter",
-                     "cleanup" : "Cleanup", 
-                     "fishing_c" : "Fishing Comm.",
-                     "fishing_r" : "Fishing Rec.",
-                     "research" : "Research",
-                     "diving" : "Diving",
-                     "repairs" : "Repairs",
-                     "distress" : "Distress",
-                     "other" : "Other",
-                     "valid" : "Valid"}
+        self.button = button(self, "Show Legacy Tags", self.show_legacy)
+        grid(self.button, row = 0, column = 1, sticky = "nse")
+
+
+        self.valid = tk.IntVar(self, value=0)
+        self.check = checkbutton(self, "Valid Track", self.valid)  
         
-        # Create variables for Checkboxes
-        self.variables = dict()
-        for k in tags:
-            self.variables[k] = tk.IntVar(self, value = 0)
+        # Activity Variable, Storing code
+        self.activity = tk.StringVar(self, value="")
+        # add the choice buttons for activity choice
+        
+        self.choices = dict()
+        for tag, name in zip(ACT_CODE_NEW, ACT_NAMES_NEW):
+            self.choices[tag] = tk.Radiobutton(self, text = name, 
+                                               variable=self.activity,
+                                               value = tag)
             
-        # Create widgets for Checkboxes
-        self.checkboxes = dict()
-        for k in tags:
-            self.checkboxes[k] = checkbutton(self, self.tags[k], self.variables[k])
-            
+        # Should have 10 tags
+        
         # Create selection box for vessel type
         self.type = tk.StringVar(value = "Select Vessel Type")
         self.menu = ttk.Combobox(self, textvariable=self.type)
@@ -263,32 +262,32 @@ class TrackTags(AppFrame):
             
         # Render Page Layout:
         height = 6
-        for i, k in enumerate(tags):
-            r = (i % height) + 1
-            if i // height == 0:
-                grid(self.checkboxes[k], row = r, column = 0, sticky = "w")
-            else: # i // height == 1:
-                grid(self.checkboxes[k], row = r, column = 1, sticky = "w", padx = 10)
-                
-        grid(self.menu, row = 7, column = 0, columnspan = 2, sticky = "nsew")
+        for i, k in enumerate(ACT_CODE_NEW[:-1]):
+            r, c = (i % height) + 1, i // height
+            grid(self.choices[k], row = r, column = c, sticky = "w", padx=10)
+        grid(self.choices[""], row = 6, column = 1, sticky = "w", padx=10)
+        grid(self.check, row = 7, column = 0, columnspan = 2, sticky = "nsw")
+        grid(self.menu, row = 8, column = 0, columnspan = 2, sticky = "nsew")
         
-        configure_grid(self, row_weights=[1,1,1,1,1,1,1,1], col_weights=[1,1])
+        configure_grid(self, row_weights=[1]*9, col_weights=[1,1])
 
     def refresh(self):
         # Pull tag data from the current data row
         data = self.parent.current_track
-        for k,v in self.variables.items():
-            v.set(data[k])
+        self.activity.set(data["activity"])
+        self.valid.set(data["valid"])
             
         # Pull vessel type data:
         vessel_type = None if pd.isna(data["type_m2_agg"]) else data["type_m2_agg"]
         self.type.set(LOOKUP_TYPE_code_to_name_app[vessel_type])
             
     def save(self):
-        for k,v in self.variables.items():
-            self.parent.current_track[k] = v.get()
-            
+        self.parent.current_track["activity"] = self.activity.get()
+        self.parent.current_track["valid"] = self.valid.get()
         self.parent.current_track["type_m2_agg"] = LOOKUP_TYPE_name_to_code_app[self.type.get()]
+        
+    def show_legacy(self):
+        self.parent.open_legacy_tags()
         
 class TrackNotes(AppFrame):
     def __init__(self, container, **kwargs):
@@ -327,6 +326,8 @@ class TrackNotes(AppFrame):
         note = self.box.get("1.0", tk.END).strip()
         if len(note) > 0:
             self.parent.current_track["notes"] = note
+        else:
+            self.parent.current_track["notes"] = pd.NA
         
 class TrackMap(AppFrame):
     def __init__(self, container, **kwargs):
@@ -339,11 +340,15 @@ class TrackMap(AppFrame):
                                                width=self.winfo_width(), 
                                                height=self.winfo_height(), 
                                                corner_radius=0)
-        grid(self.map_widget, row = 1, column=0, sticky="nsew")
+        grid(self.map_widget, row = 1, column=0, sticky="nsew", columnspan = 2)
         
-        configure_grid(self, row_weights=[0,1], col_weights=[1])
+        # Reload button
+        self.button = button(self, "Reload Map", self.reload_map)
+        grid(self.button, row = 0, column = 1, sticky = "nse")
         
-        self.default_zoom = 13
+        configure_grid(self, row_weights=[0,1], col_weights=[1,0])
+        
+        self.default_zoom = 15
         
     # Map Control Functions
     def center_map(self, position, zoom):
@@ -387,6 +392,10 @@ class TrackMap(AppFrame):
         self.clear_map()
         self.center_map(center, self.default_zoom)
         self.add_trajectory(trajectory)
+        
+    def reload_map(self):
+        # Address the issue of map markers being stuck in map window
+        self.parent.reload_map()
     
 
 class FilePopUp(AppWindow):
@@ -530,8 +539,7 @@ class DataWindow(AppWindow):
         for elet in self.filter_options:
             self.cbox_vars[elet] = tk.IntVar(self, value = 0)
             self.cbox_buttons[elet] = checkbutton(self, self.filter_options[elet], self.cbox_vars[elet])
-            
-        height = 2
+        
         for i,k in enumerate(["valid_only", "has_notes", "no_tags", "duplicate_tags"]):
             row = 4 + (i // 2)
             col = 2 + (i % 2)
@@ -568,7 +576,6 @@ class DataWindow(AppWindow):
         no_tag = self.cbox_vars["no_tags"].get()
         dupe = self.cbox_vars["duplicate_tags"].get() 
     
-        
         # Do some preliminary check with the entered confidence filter values:
         try:
             conf_lo = float(conf_lo) if conf_lo else 0.0
@@ -638,6 +645,124 @@ class DataWindow(AppWindow):
         # Set the parent's data control window to None
         self.parent.data_control_window = None
         self.destroy()
+        
+class TrackSummary(AppWindow):
+    def __init__(self, container, **kwargs):
+        super().__init__(container, **kwargs)
+        self.title("Additional Track Information")
+        self.resizable(False, False)
+        self.geometry("400x200")
+        self.configure(background='white')
+        
+        num_attributes = 10
+        
+        # Define static text labels:
+        self.static_text = [
+            label(self, "Min Speed: "),
+            label(self, "Max Speed: "),
+            label(self, "Avg Speed: "),
+            label(self, "Curviness: "),
+            label(self, "Avg Heading: "),
+            label(self, "SD Heading:"),
+            label(self, "Avg Heading Change: "),
+            label(self, "SD Heading Change: "),
+            label(self, "Distance Traveled: "),
+            label(self, "Max Dist from Start: "),
+        ]
+        
+        for i, static_txt in enumerate(self.static_text):
+            grid(static_txt, row = i, column = 0, sticky = "w")
+            
+            
+        # Define dynamic text labels:
+        # The keys are used to identify the data frame columns
+        self.dynamic_text = {
+             "min_speed" : label(self, "N/A"), 
+             "max_speed": label(self, "N/A"),
+             "avg_speed": label(self, "N/A"), 
+             "curviness": label(self, "N/A"),
+             "heading_mean": label(self, "N/A"),
+             "heading_std": label(self, "N/A"),
+             "turning_mean": label(self, "N/A"),
+             "turning_std": label(self, "N/A"),
+             "distance" : label(self, "N/A"),
+             "distance_o" : label(self, "N/A")
+             }
+        
+        for i, dynamic_txt in enumerate(self.dynamic_text.values()):
+            grid(dynamic_txt, row = i , column = 1, sticky = "w")
+            
+        configure_grid(self, row_weights=[1]*num_attributes, col_weights=[1,1])
+        self.protocol("WM_DELETE_WINDOW", self.close_window)
+        if self.parent.data is not None and self.parent.current_track is not None:
+            self.refresh()
+        
+    def refresh(self):
+        # Obtain the observation data 
+        data = self.parent.current_track
+        for k,v in self.dynamic_text.items():
+            update_label(v, np.round(data[k], 5))
+            
+    def close_window(self):
+        # Clear the window in main application
+        self.parent.track_summary_window = None
+        self.destroy()
+        
+class TrackTagsLegacy(AppWindow):
+    # GUI Window for legacy activity tags
+    def __init__(self, container, **kwargs):
+        super().__init__(container, **kwargs)
+        self.title("Legacy Activity Tags")
+        self.resizable(False, False)
+        self.geometry("300x125")
+        self.configure(background='white')
+        
+        # Create the activity tags to be used in this module
+        self.tags = dict(LOOKUP_ACT_code_to_name)
+        self.tags.pop(None)
+        # Use lists to preserve GUI item order:
+        tags = ["transit", "loiter", "overnight", "cleanup", "fishing_c",
+                "fishing_r", "research", "diving", "repairs", "distress", "other"]
+        
+        # Create variables for Checkboxes
+        self.variables = dict()
+        for k in tags:
+            self.variables[k] = tk.IntVar(self, value = 0)
+            
+        # Create widgets for Checkboxes
+        self.checkboxes = dict()
+        for k in tags:
+            self.checkboxes[k] = checkbutton(self, self.tags[k], self.variables[k])
+        
+        # Render Page Layout:
+        height = 6
+        for i, k in enumerate(tags):
+            r, c = i % height, i // height
+            grid(self.checkboxes[k], row = r, column = c, sticky = "w", padx = 10)
+            
+        configure_grid(self, row_weights=[1]*6, col_weights=[1,1])
+        self.protocol("WM_DELETE_WINDOW", self.close_window)
+        if self.parent.data is not None and self.parent.current_track is not None:
+            self.refresh()
+            
+    def refresh(self):
+        # Pull tag data from the current data row
+        data = self.parent.current_track
+        for k,v in self.variables.items():
+            v.set(data[k])
+            
+    def save(self):
+        for k,v in self.variables.items():
+            self.parent.current_track[k] = v.get()
+            
+    def close_window(self):
+        # First save the available data
+        self.save()
+        self.parent.legacy_tags_window = None
+        self.destroy()
+
+        
+        
     
 ##############################
 ###### Main Application ######
@@ -646,7 +771,7 @@ class DataWindow(AppWindow):
 class MainApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Vessel Activity Tagger by User001256")
+        self.title("Vessel Activity Tagger by User001256 (Transitional Build)")
         self.resizable(False, False)
         self.geometry("1280x720")
         self.configure(background='black')
@@ -691,6 +816,8 @@ class MainApp(tk.Tk):
         # Windows
         self.data_control_window = None
         self.file_load_window = None
+        self.track_summary_window = None
+        self.legacy_tags_window = None
         
         # Bind Hotkeys:
         self.bind("<Left>", self.prev)
@@ -698,10 +825,6 @@ class MainApp(tk.Tk):
         
         # Try loading from the default path
         self.load_from_default()
-       
-       
-    def test(self, event):
-        print(event)
             
     def load_from_default(self):
         # Try loading from default
@@ -720,7 +843,7 @@ class MainApp(tk.Tk):
             self.refresh()
 
         
-    # Main Application Routines (May be triggered by application frame events)
+    # Main App functions for spawing subwindows
         
     def load_file(self):
         # Prevent load overwrite when opening the load window:
@@ -758,6 +881,33 @@ class MainApp(tk.Tk):
         
         self.data_control_window = DataWindow(self)
         
+    def open_track_summary(self):
+        if self.data is None:
+            messagebox.showerror(title = "No Data Loaded.", message = "Please Load Data Files First.")
+            return
+        if self.track_summary_window is not None:
+            self.track_summary_window.focus()
+            return
+        
+        self.track_summary_window = TrackSummary(self)
+        
+    def open_legacy_tags(self):
+        if self.data is None:
+            messagebox.showerror(title = "No Data Loaded.", message = "Please Load Data Files First.")
+            return
+        if self.legacy_tags_window is not None:
+            self.legacy_tags_window.focus()
+            
+        self.legacy_tags_window = TrackTagsLegacy(self)
+        
+    def reload_map(self):
+        self.track_map_frame.destroy()
+        self.track_map_frame = TrackMap(self, background = "white")
+        self.track_map_frame.grid(row = 0, column = 1, rowspan= 3,
+                                  sticky="nsew", padx = 2, pady = 2)
+        if self.data is not None:
+            self.track_map_frame.refresh()
+        
     def refresh(self):
         """
         Refresh the entire program, including all frames and external windows.
@@ -777,6 +927,10 @@ class MainApp(tk.Tk):
         self.track_map_frame.refresh()
         if self.data_control_window is not None:
             self.data_control_window.refresh()
+        if self.track_summary_window is not None:
+            self.track_summary_window.refresh()
+        if self.legacy_tags_window is not None:
+            self.legacy_tags_window.refresh()
         
     def save(self):
         """
@@ -789,6 +943,10 @@ class MainApp(tk.Tk):
             return
         self.track_tags_frame.save()
         self.track_notes_frame.save()
+        if self.legacy_tags_window is not None:
+            self.legacy_tags_window.save()
+        
+        
         # Propagate the update to the data frame. (Copy on write principle)
         self.data.save_track(self.current_track, self.idx_obs)
         

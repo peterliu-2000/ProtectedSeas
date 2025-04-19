@@ -11,6 +11,21 @@ VESSEL_TYPES = ["cargo/tanker", "class_b", "passenger_ship", "other",
 
 
 # Lookup Tables for activity tags:
+ACT_CODE = [
+    None,
+    "transit",
+    "loiter" ,
+    "overnight" ,
+    "cleanup" ,
+    "fishing_c" ,
+    "fishing_r" ,
+    "research" ,
+    "diving" ,
+    "repairs" ,
+    "distress" ,
+    "other"
+]
+
 ACT_NAMES = [
     "All",
     "Transit",
@@ -26,37 +41,39 @@ ACT_NAMES = [
     "Other" 
 ]
 
-LOOKUP_ACT_name_to_code = {
-            "All" : None,
-            "Transit" : "transit",
-            "Loiter" : "loiter",
-            "Overnight Loiter" : "overnight",
-            "Cleanup" : "cleanup",
-            "Fishing Comm." : "fishing_c",
-            "Fishing Rec." : "fishing_r",
-            "Research" : "research",
-            "Diving" : "diving",
-            "Repairs" : "repairs",
-            "Distress" : "distress",
-            "Other" : "other"
-        }
+ACT_CODE_NEW = [
+    "transit", 
+    "drifting", 
+    "fishing", 
+    "stopped", 
+    "work", 
+    "other", 
+    "reserved1", 
+    "reserved2", 
+    "reserved3", 
+    ""
+]
 
-LOOKUP_ACT_code_to_name = {"transit" : "Transit",
-                     "loiter" : "Loiter",
-                     "overnight" : "Overnight Loiter",
-                     "cleanup" : "Cleanup", 
-                     "fishing_c" : "Fishing Comm.",
-                     "fishing_r" : "Fishing Rec.",
-                     "research" : "Research",
-                     "diving" : "Diving",
-                     "repairs" : "Repairs",
-                     "distress" : "Distress",
-                     "other" : "Other",
-                     None : "All"}
+ACT_NAMES_NEW = [
+    "Transit",
+    "Slow Speed Activity",
+    "Fishing (Commercial)",
+    "Anchored / Stopped",
+    "Work and Research",
+    "Other / Unclear",
+    "Reserved Tag 1",
+    "Reserved Tag 2",
+    "Reserved Tag 3",
+    "Untagged"
+]
+
+LOOKUP_ACT_code_to_name = {c : n for (c, n) in zip(ACT_CODE, ACT_NAMES)}
+LOOKUP_ACT_name_to_code = {n : c for (c, n) in zip(ACT_CODE, ACT_NAMES)}
+
 
 # Lookup Tables for vessel types:
 TYPE_NAMES = [
-    "All",
+    "",
     "Class B Vessels",
     "Cargo & Tanker Ship" ,
     "Fishing Boat",
@@ -67,6 +84,19 @@ TYPE_NAMES = [
     "Tug & Tow Boat",
     "Others / Unspecified"
 ]
+
+TYPE_CODE = [
+    None,
+    "class_b",
+    "cargo/tanler",
+    "fishing_boat",
+    "military_ship",
+    "pleasure_craft",
+    "tug/tow",
+    "sail",
+    "other"
+]
+
 
 LOOKUP_TYPE_name_to_code = {
     "All" : None,
