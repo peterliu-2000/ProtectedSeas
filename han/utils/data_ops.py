@@ -54,8 +54,10 @@ def read_and_init_track_df(filename):
     # Mandatory Fields, Raise error if missing
     mandatory = ["id_track", 'id_site', 'duration', "detections", 'confidence']
     # Tags: Optional Fields, Initialize if necessary
-    tags = ["transit", "overnight", "loiter", "cleanup", "fishing_c", "fishing_r",
-            "research", "diving", "repairs", "distress", "other", "valid"]
+    legacy_tags = ["transit", "overnight", "loiter", "cleanup", "fishing_c", "fishing_r",
+            "research", "diving", "repairs", "distress", "other"]
+    
+    
     # Other Optional Labels, Initialize if Necessary:
     optional = ["type_m2_agg", "sdate", "stime", "ldate", "ltime", "notes"]
     
@@ -65,9 +67,21 @@ def read_and_init_track_df(filename):
         if c not in columns:
             raise RuntimeError(f"Imported track {filename} has invalid formatting.")
     
-    for c in tags:
-        if c not in columns:
-            df[c] = np.zeros(df_length)
+    for c in legacy_tags:
+        if c in columns:
+            print("Loaded a legacy M2 tagged dataset.")
+            break
+            
+    # Initialize Required Fields
+    if "activity" in columns:
+        df["activity"] = df["activity"].fillna("")
+    
+    if "valid" not in columns:
+        df["valid"] = np.ones(df_length)
+    if "activity" not in columns:
+        df["activity"] = [""] * df_length
+        
+  
             
     # Use Peter's aggregator for type_m2_agg.
     if "type_m2" in columns:
@@ -110,15 +124,15 @@ def read_and_init_detections_df(filename):
                  "speed", 'course', 'latitude', 'longitude']
     for c in mandatory:
         if c not in columns:
-            raise RuntimeError(f"Imported track {filename} has invalid formatting.")
+            raise RuntimeError(f"Imported detection {filename} has invalid formatting.")
         
     # If the dataframe imported is already processed:
     if "time" in columns:
         return df[relevant_cols]
     
     # Otherwise, requires "cdate" and "ctime"
-    if "cdate" not in columns or "ctiem" not in columns:
-        raise RuntimeError(f"Imported track {filename} has invalid formatting.")
+    if "cdate" not in columns or "ctime" not in columns:
+        raise RuntimeError(f"Imported detections {filename} has invalid formatting.")
     
     print(f"The imported detections file {filename} requires preprocessing.\
           Please expect ~2 minutes to finish.")
@@ -180,7 +194,7 @@ def filter_no_tags(track_df):
     Args:
         track_df: track dataframe
     """
-    return np.sum(track_df[ACTIVITY_TAGS].to_numpy(), axis = 1) == 0 
+    return np.logical_or(pd.isna(track_df["activity"]),track_df["activity"] == "")
 
 def filter_duplicate_tags(track_df):
     """

@@ -35,7 +35,7 @@ def init_map(site_location: tuple[float, float]):
     Args:
         site_location
     """
-    return folium.Map(location = site_location, zoom_start=9, min_zoom=5, max_zoom=12)
+    return folium.Map(location = site_location, zoom_start=12, min_zoom=6, max_zoom=18)
 
 def plot_trajectory(map, trajectory):
     """

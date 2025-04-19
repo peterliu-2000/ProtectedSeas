@@ -49,7 +49,7 @@ class ProgramData():
         Args:
             filename:
         """
-        self.tracks.to_csv(filename)
+        self.tracks.to_csv(filename, index = False)
         
     def get_trajectory(self, track_id):
         """
