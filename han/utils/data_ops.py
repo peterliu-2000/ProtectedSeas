@@ -99,7 +99,7 @@ def read_and_init_track_df(filename):
 
     return df
 
-def read_and_init_detections_df(filename):
+def read_and_init_detections_df(filename, save = True):
     """
     Read and initialize the data frame for trajectories. The trajectory file
     should contain all detection points corresponding to each track in the label
@@ -144,9 +144,10 @@ def read_and_init_detections_df(filename):
         std_time[i] = parse_time(str_date[i], str_time[i])
     df["time"] = std_time
     
-    cached_filename = "cached_" + filename
-    cache_trajectory_data(df[relevant_cols], cached_filename)
-    print(f"Pre_processing complete. Saved cached data to {cached_filename}")
+    if save:
+        cached_filename = filename.replace(".csv", "_cached.csv")
+        cache_trajectory_data(df[relevant_cols], cached_filename)
+        print(f"Pre_processing complete. Saved cached data to {cached_filename}")
     
     return df[relevant_cols]
 
