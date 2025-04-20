@@ -1,5 +1,17 @@
 ## April 15, W3
 
+#### Activity Data Progress:
+* Preliminary screening: Removed all invalid tracks as well as tracks with fewer than 50 detections. Currently have 4366 Tracks.
+* Tentatively defined the following labels: Transit, Low Speed, Stopped / Anchored, Work, Other / Unspecified, Fishing - Hook and Line, Fishing - Seine, Fishing - Trawl
+* For vessels traveling in a straight line (previosuly all manually tagged as transit), categoriezed avg speed >= 5kts as transit, and <5kts as low speed
+* Categorized all kayaking activities as low speed
+* Categorized fishing activities based on user submitted notes.
+* Categorized vessles with an average speed of <= 1km/hr (0.54 kts) as stopped. Manually removed some mistakes the heuristics made.data 
+
+#### Other Progress:
+* Radar data seems to be quite noisy on some tracks, denoising techniques are applied to the radar detection time series data (basically a convolution with a gaussian kernel).
+
+
 #### Meeting Notes
 
 * Sailboats: two distinctive behaviors: sails down using motors vs sails up (quite some in the dataset), useful to think about for _activity prediction_
