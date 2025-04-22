@@ -123,8 +123,8 @@ class ProgramData():
         # Initial data_filter
         data_filter = [True] * self.num_tracks
         # Filter according to activity tags
-        if tag is not None and tag in ACTIVITY_TAGS:
-            tag_filter = univariate_filter(self.tracks, tag, lambda x: x > 0)
+        if tag is not None:
+            tag_filter = univariate_filter(self.tracks, "activity", lambda x: x == tag)
             data_filter = np.logical_and(data_filter, tag_filter)
         # Filter according to vessel type tags
         if type is not None:

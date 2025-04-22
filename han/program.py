@@ -22,8 +22,8 @@ pd.options.mode.copy_on_write = True
 
 
 # Default Paths for quick loading
-default_track = "../data/tracks_tagged_v1_s.csv"
-default_detections = "../data/detections_tagged_cached.csv"
+default_track = "../data/tracks_tagged_v4.csv"
+default_detections = "../data/detections_tagged_smoothed.csv"
 
 #########################
 ###### GUI Helpers ######
@@ -348,7 +348,7 @@ class TrackMap(AppFrame):
         
         configure_grid(self, row_weights=[0,1], col_weights=[1,0])
         
-        self.default_zoom = 15
+        self.default_zoom = 13
         
     # Map Control Functions
     def center_map(self, position, zoom):
@@ -507,7 +507,7 @@ class DataWindow(AppWindow):
         
         # Filter Dropdown Menus: 
         self.act_menu = ttk.Combobox(self, textvariable=self.act_display_name)
-        self.act_menu["values"] = ACT_NAMES
+        self.act_menu["values"] = ACT_NAMES_NEW + ["All"]
         self.act_menu.current(0)
         grid(self.act_menu, row = 2, column = 1, sticky = "nsew", columnspan = 3)
             
@@ -530,8 +530,6 @@ class DataWindow(AppWindow):
         self.filter_options = {
             "valid_only" : "Show Valid Tracks",
             "has_notes" : "Show Tracks w/ Notes",
-            "no_tags" : "Show Untagged",
-            "duplicate_tags" : "Show Duplicate Tags"
         }
             
         self.cbox_vars = dict()
@@ -540,7 +538,7 @@ class DataWindow(AppWindow):
             self.cbox_vars[elet] = tk.IntVar(self, value = 0)
             self.cbox_buttons[elet] = checkbutton(self, self.filter_options[elet], self.cbox_vars[elet])
         
-        for i,k in enumerate(["valid_only", "has_notes", "no_tags", "duplicate_tags"]):
+        for i,k in enumerate(["valid_only", "has_notes"]):
             row = 4 + (i // 2)
             col = 2 + (i % 2)
             grid(self.cbox_buttons[k], row = row, column = col, sticky = "w")
@@ -565,16 +563,19 @@ class DataWindow(AppWindow):
         filtering data to the main application
         """
         # First, query all the filter menus to get the codes for filters
-        act_code = LOOKUP_ACT_name_to_code[self.act_menu.get()]
+        act_code = None
+        try:
+            act_code = LOOKUP_ACT_NEW_name_to_code[self.act_menu.get()]
+        except KeyError:
+            act_code = None
         type_code = LOOKUP_TYPE_name_to_code[self.type_menu.get()]
+     
         
         conf_lo = self.confidence_entry[0].get()
         conf_hi = self.confidence_entry[1].get()
         
         valid = self.cbox_vars["valid_only"].get()
         notes = self.cbox_vars["has_notes"].get()
-        no_tag = self.cbox_vars["no_tags"].get()
-        dupe = self.cbox_vars["duplicate_tags"].get() 
     
         # Do some preliminary check with the entered confidence filter values:
         try:
@@ -593,8 +594,6 @@ class DataWindow(AppWindow):
         filter_parameters["tag"] = act_code
         filter_parameters["type"] = type_code
         filter_parameters["has_notes"] = bool(notes)
-        filter_parameters["no_tags"] = bool(no_tag)
-        filter_parameters["duplicate_tags"] = bool(dupe)
         filter_parameters["valid_only"] = bool(valid)
         filter_parameters["confidence_low"] = conf_lo
         filter_parameters["confidence_high"] = conf_hi
@@ -612,7 +611,10 @@ class DataWindow(AppWindow):
         # Load the filter configuration from the application
         params = self.parent.filter_parameters
         # Obtain string representations of the parameters
-        self.act_display_name.set(LOOKUP_ACT_code_to_name[params["tag"]])
+        try:
+            self.act_display_name.set(LOOKUP_ACT_NEW_code_to_name[params["tag"]])
+        except KeyError:
+            self.act_display_name.set("All")
         self.type_display_name.set(LOOKUP_TYPE_code_to_name[params["type"]])
         self.confidence_entry[0].delete(0, tk.END)
         self.confidence_entry[1].delete(0, tk.END)
@@ -897,6 +899,7 @@ class MainApp(tk.Tk):
             return
         if self.legacy_tags_window is not None:
             self.legacy_tags_window.focus()
+            return
             
         self.legacy_tags_window = TrackTagsLegacy(self)
         

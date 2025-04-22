@@ -51,6 +51,8 @@ ACT_CODE_NEW = [
     "reserved1", 
     "reserved2", 
     "reserved3", 
+    "reserved4",
+    "reserved5",
     ""
 ]
 
@@ -61,15 +63,19 @@ ACT_NAMES_NEW = [
     "Anchored / Stopped",
     "Work and Research",
     "Other / Unclear",
-    "Reserved Tag 1",
-    "Reserved Tag 2",
-    "Reserved Tag 3",
+    "R1 - Hook and line",
+    "R2 - Seine",
+    "R3 - Trawl",
+    "R4",
+    "R5",
     "Untagged"
 ]
 
 LOOKUP_ACT_code_to_name = {c : n for (c, n) in zip(ACT_CODE, ACT_NAMES)}
 LOOKUP_ACT_name_to_code = {n : c for (c, n) in zip(ACT_CODE, ACT_NAMES)}
 
+LOOKUP_ACT_NEW_code_to_name = {c : n for (c, n) in zip(ACT_CODE_NEW, ACT_NAMES_NEW)}
+LOOKUP_ACT_NEW_name_to_code = {n : c for (c, n) in zip(ACT_CODE_NEW, ACT_NAMES_NEW)}
 
 # Lookup Tables for vessel types:
 TYPE_NAMES = [
@@ -153,4 +159,4 @@ LOOKUP_TYPE_code_to_name_app = {
 
 
 # Default Filter Parameters
-FILTER_DEFAULT = {'tag': None, 'type': None, 'has_notes': False, 'no_tags': False, 'duplicate_tags': False, 'valid_only': False, 'confidence_low': 0.0, 'confidence_high': 1.0}
+FILTER_DEFAULT = {'tag': None, 'type': None, 'has_notes': False, 'valid_only': False, 'confidence_low': 0.0, 'confidence_high': 1.0}
