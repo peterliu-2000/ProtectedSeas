@@ -1,5 +1,8 @@
 ## April 15, W3
 
+#### Insights from Summary Statistics Calc
+* Some tracks, with various issues, disrupt summary statistics calculations (ref PPT)
+
 #### Activity Data Progress:
 * Preliminary screening: Removed all invalid tracks as well as tracks with fewer than 50 detections. Currently have 4366 Tracks.
 * Tentatively defined the following labels: Transit, Low Speed, Stopped / Anchored, Work, Other / Unspecified, Fishing - Hook and Line, Fishing - Seine, Fishing - Trawl, and Fishing - Others
