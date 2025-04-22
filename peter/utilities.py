@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import pandas as pd
 
 class VesselTypeAggregator:
     """
@@ -35,8 +36,6 @@ class VesselTypeAggregator:
 
         df['type_m2_agg'] = df['type_m2'].map(self.type_mapping).fillna('other')
 
-import matplotlib.pyplot as plt
-import pandas as pd
 
 class TrajectoryPlotter:
     """
