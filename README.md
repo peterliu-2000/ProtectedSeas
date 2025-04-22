@@ -9,9 +9,9 @@
 * Categorized vessles with an average speed of <= 1km/hr (0.54 kts) as stopped. Manually removed some mistakes the heuristics made.data
 * May consider separating lobster fishing into its own category.
 
-#### Other Progress:
+#### Questions and Notes:
+* `radar_detection` file has attribute like speed, course etc. How does radar pick up these attributes? They seem to be really robust to coordinate disruptions
 * Radar data seems to be quite noisy on some tracks, denoising techniques are applied to the radar detection time series data (basically a convolution with a gaussian kernel).
-
 
 #### Meeting Notes
 
