@@ -28,6 +28,10 @@ wheels/
 .vscode/
 *.code-workspace
 
+#PPTs
+*.pptx
+*.ppt
+
 # Environment
 .env
 .venv
