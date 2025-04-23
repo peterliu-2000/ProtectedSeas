@@ -45,29 +45,23 @@ ACT_CODE_NEW = [
     "transit", 
     "drifting", 
     "fishing", 
+    "lobster",
+    "hook", 
+    "seine", 
+    "trawl", 
     "stopped", 
-    "work", 
-    "other", 
-    "reserved1", 
-    "reserved2", 
-    "reserved3", 
-    "reserved4",
-    "reserved5",
     ""
 ]
 
 ACT_NAMES_NEW = [
     "Transit",
     "Slow Speed Activity",
-    "Fishing (Commercial)",
+    "Fishing (Unspecified)",
+    "Lobster Fishing",
+    "Hook and Line Fishing",
+    "Purse Seine Fishing",
+    "Trawl Fishing",
     "Anchored / Stopped",
-    "Work and Research",
-    "Other / Unclear",
-    "R1 - Hook and line",
-    "R2 - Seine",
-    "R3 - Trawl",
-    "R4",
-    "R5",
     "Untagged"
 ]
 
