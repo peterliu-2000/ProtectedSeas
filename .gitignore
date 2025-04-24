@@ -57,3 +57,6 @@ venv.bak/
 mlartifacts/
 mlruns/
 .Rproj.user
+
+#models
+*.pth
