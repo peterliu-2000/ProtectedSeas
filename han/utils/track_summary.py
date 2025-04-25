@@ -57,36 +57,7 @@ class SumStats:
         a = np.sin(delta_phi / 2) ** 2 + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(delta_lambda / 2) ** 2
         c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
         return r * c
-    
-    @staticmethod
-    def _circular_mean(angles):
-        """
-        Calculate the circular mean of a list of angles.
-        Args:
-            angles(pd series): angles in degress
-        Returns:
-            float: circular mean of the angles in degrees
-        """
-        angles = angles * np.pi / 180
-        x = np.cos(angles)
-        y = np.sin(angles)
-        return np.arctan2(np.sum(y), np.sum(x)) * 180 / np.pi
 
-    @staticmethod
-    def _circular_std(angles):
-        """
-        Calculate the circular standard deviation of a list of angles
-        Args:
-            angles(pd series): angles in degress
-        Returns:
-            float: circular std of the angles in degrees
-        """
-        angles = angles * np.pi / 180
-        x, y = np.mean(np.cos(angles)), np.mean(np.sin(angles))
-        R = np.sqrt(x**2 + y**2)
-        std = np.sqrt(-2 * np.log(R)) * 180 / np.pi
-        return std
-    
     def compute_track_features(self, detections:pd.DataFrame):
         """
         Computes the track features from a detection dataframe
@@ -105,8 +76,8 @@ class SumStats:
         headingSin = np.sin(detections["course"] * np.pi / 180)
         
         # Compute the mean and std of these trig vectors
-        meanCos , stdCos = np.mean(headingCos), np.std(headingCos)
-        meanSin , stdSin = np.mean(headingSin), np.std(headingSin)
+        meanCos = np.mean(headingCos)
+        meanSin = np.mean(headingSin)
         # Compute the average heading and heading standard deviation
         avg_heading = np.arctan2(meanSin, meanCos) * 180 / np.pi
         std_heading = np.sqrt(-np.log(meanCos*meanCos + meanSin*meanSin))
@@ -114,7 +85,6 @@ class SumStats:
         
         # Compute some deltas (length: n_detect - 1)
         delta_course1 = np.abs(course - course.shift(1))[1:]
-        delta_course2 = np.abs(detections["course"] - detections["course"].shift(1))[1:]
         delta_course = delta_course1
         
         # Compute pointwise distances
