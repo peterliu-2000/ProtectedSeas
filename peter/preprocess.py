@@ -2,14 +2,13 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import warnings
-import os
 
 def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     """"
     Main preprocess pipeline that:
-        1. One-to-one matching between ais_tracks and radar_detections
+        1. One-to-one matching between ais_tracks and radar_detections (results match with Songyu's)
         2. Remove tracks with less than 50 detections counts
-        3. Remove disrupted tracks
+        3. Remove disrupted tracks if max instant speed >= 150 ##TODO: check threshold
 
     Inputs: original ais_track and radar_detection data path
     Returns: preprocessed radar_detections
@@ -103,16 +102,13 @@ class DisruptionFilter:
         return valid_detections[valid_detections['disrupted'] == False]
 
     def filter_disrupted_tracks(self, group):
-        group = group.sort_values(by='datetime').copy()
 
+        group = group.sort_values(by='datetime').copy()
         group['latitude_prev'] = group['latitude'].shift(1)
         group['longitude_prev'] = group['longitude'].shift(1)
         group['time_prev'] = group['datetime'].shift(1)
-
-        # Calculate differences between consecutive detections
         group['distance_diff'] = self._haversine_distance(
-            group['latitude_prev'], group['longitude_prev'],
-            group['latitude'], group['longitude']
+            group['latitude_prev'], group['longitude_prev'],group['latitude'], group['longitude']
         )
         group['time_diff'] = (group['datetime'] - group['time_prev']).dt.total_seconds()
         group['instant_speed'] = group['distance_diff'] / group['time_diff'] * self.KMPS_TO_KNOTS
