@@ -6,6 +6,11 @@ import os
 
 def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     """"
+    Main preprocess pipeline that:
+        1. One-to-one matching between ais_tracks and radar_detections
+        2. Remove tracks with less than 50 detections counts
+        3. Remove disrupted tracks
+
     Inputs: original ais_track and radar_detection data path
     Returns: preprocessed radar_detections
     """
@@ -133,50 +138,3 @@ if __name__ == '__main__':
     processed_radar_data = preprocess_data(ais_track_path, radar_detection_path, print_mode=True)
     save_path = '../data/cleaned_data/processed_radar_detections.csv'
     processed_radar_data.to_csv(save_path, index=False)
-
-
-
-
-
-# def one_to_one_matching(ais_tracks, radar_detections):
-
-#     assoc_id_2_id_track_counts =radar_detections.groupby('assoc_id')['id_track'].nunique().reset_index().sort_values('id_track', ascending=False)
-#     id_track_detection_counts = radar_detections.groupby('id_track')['assoc_id'].count().reset_index().rename(columns={'assoc_id': 'detection_count'})
-
-#     assoc_id_1_track = []
-#     assoc_id_top_track = set()
-#     ais_id_set = set(ais_tracks['id_track'].unique())
-
-#     for _, row in assoc_id_2_id_track_counts.iterrows():
-#         assoc_id = row['assoc_id']
-#         id_track_count = row['id_track']
-#         if assoc_id in ais_id_set:
-#             if id_track_count == 1:
-#                     assoc_id_1_track.append(assoc_id)
-#             else:
-#                 id_tracks = radar_detections[radar_detections['assoc_id'] == assoc_id]['id_track']
-#                 counts =id_track_detection_counts[id_track_detection_counts['id_track'].isin(id_tracks)].sort_values('detection_count', ascending=False)
-#                 top_id_track = counts.iloc[0]['id_track']
-#                 assoc_id_top_track.add((assoc_id, top_id_track))
-
-#     df1 = radar_detections[radar_detections['assoc_id'].isin(assoc_id_1_track)]
-#     df2 = radar_detections[
-#         radar_detections.apply(lambda row: (row['assoc_id'], row['id_track']) in assoc_id_top_track, axis=1)
-#     ]
-
-#     matched_radar_detections = pd.concat([df1, df2])
-
-#     assert len(matched_radar_detections['id_track'].unique()) == len(matched_radar_detections['assoc_id'].unique()), 'one to one matching failed'
-#     assert np.isin(matched_radar_detections['assoc_id'].unique(), ais_tracks['id_track'].unique()).all(), 'some assoc_id is not in ais_tracks'
-#     assert np.isin(matched_radar_detections['id_track'].unique(), radar_detections['id_track'].unique()).all(), 'some id_track is not in radar_detections'
-
-
-
-     
-
-     
-
-
-
-    
-        
