@@ -2,6 +2,11 @@
 
 
 
+Preprocessing pipeline:
+* Songyu: push ais <-> radar detections matched data online
+* Remove disrupted (turns out to be 8%) by finding any group with observation of >= 150 knots instantaneous speed
+
+
 ## April 15, W3
 
 #### Insights from Summary Statistics Calc
