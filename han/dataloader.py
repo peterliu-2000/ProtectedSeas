@@ -89,6 +89,7 @@ def data_split(dataset, batch_size, val_prob = 0.2, num_workers = 1):
     train_sampler = SubsetRandomSampler(train_inds)
     val_sampler = SubsetRandomSampler(val_inds)
     
+    
     train_loader = DataLoader(dataset, batch_size=batch_size, 
                               sampler = train_sampler, num_workers=num_workers,
                               collate_fn=collate_fn)
