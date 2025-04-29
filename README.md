@@ -6,11 +6,16 @@ Experimentation with computer vision based models
   * Green channel: Average speed of detection points within each pixel (clipped to range (0, 25.5))
   * Blue channel: Average turning of detection points within each pixel (clipped to range (0, 180) unit: degree)
 * ResNet-18 Model vastly overfits to the training data even with moderate dropout (p = 0.2, at the end of each resnet block)
-  * Presumably due to the lack of observations in certain activity classes (eg. purse seine, trawl, lobster)
+  * Training Accuracy: 0.99, Validation Accuracy: 0.89
+  * Model is really struggling with Hook and Line: very likely to label it as transit, drifting and lobster.
+  * Generalization gap presumably caused by the lack of observations in certain activity classes (eg. purse seine, trawl, lobster, hook and line)
   * Highlights the need to perform some form of data augmentation
-  * The class Fishing can be misleading to the model -> It contains some tracks that should belong to seine, trawl, lobster, or hook, but specific label could not be determined due to a lack of annotation.
+  * "fishing" can be misleading to the model -> It contains some tracks that should belong to seine, trawl, lobster, or hook, but specific label could not be determined due to a lack of annotation.
   * ResNet is not as effective at vessel type prediction compared to activity. (Too much variance of track pattern within each vessel type?)
-* Next Step: Incorporate XGBoost activity prediction model to assist the labeling of more activity data points (especially for fishing activities)
+Next Steps:
+* Incorporate XGBoost activity prediction model to assist the labeling of more activity data points (especially for fishing activities)
+* Merge observations in the "fishing" class to one of the four predefined fishing activities
+* Selectively perform data augmentation (eg. only perform data augmentation for the fishing activity classes)
 
 
 Preprocessing pipeline:
