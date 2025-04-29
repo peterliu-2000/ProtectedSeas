@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import warnings
+from vessel_agg import VesselTypeAggregator
 
 def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     """"
@@ -15,26 +16,35 @@ def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     """
     ais_tracks = pd.read_csv(ais_track_path)
     radar_detections = pd.read_csv(radar_detection_path)
+    print(' ---- Read radar and AIS data ----')
 
     #add datetime
     radar_detections['datetime'] = pd.to_datetime(radar_detections['cdate'] + ' ' + radar_detections['ctime'])
 
     #only keep one-to-one matched radar/ais detections
     matched_detections = one_to_one_matching(ais_tracks, radar_detections)
+    print(' ---- One to one matching complete ----')
 
     ##Remove tracks with less than 50 detections counts
     counts = matched_detections.groupby('id_track').count()['assoc_id'].rename('detection_count').reset_index()
     valid_ids = counts[counts['detection_count'] >= 50]['id_track']
     valid_detections = matched_detections[matched_detections['id_track'].isin(valid_ids)]
+    print(' ---- Remove tracks with less than 50 detections counts ----')
 
-    ##add datetime & remove disrupted tracks
+    ##Remove disrupted tracks
     filterer = DisruptionFilter(valid_detections)
     non_disrupted_detections = filterer()
+    print(' ---- Remove disrupted tracks ----')
 
-    #drop columns that are not needed
-    final_detections = non_disrupted_detections.drop(columns=['latitude_prev', 'longitude_prev', 'time_prev', 'distance_diff', 'time_diff', 'instant_speed','disrupted'])
+    #grab type_m2 from ais_tracks & aggregate into type_m2_agg
+    #drop unnecessary columns
+    final_detections = pd.merge(non_disrupted_detections, ais_tracks[['id_track', 'type_m2']], left_on = 'assoc_id', right_on = 'id_track', how = 'inner')
+    final_detections.rename(columns={'id_track_x': 'id_track'}, inplace=True)
+    final_detections.drop(columns=['id_track_y', 'latitude_prev', 'longitude_prev', 'time_prev', 'distance_diff', 'time_diff', 'instant_speed','disrupted'], inplace=True)
+    print(' ---- Aggregate vessel type & unnecessary columns dropped ----')
 
     if print_mode:
+        print('\n')
         print(f'Original radar detections: {len(radar_detections)} observations and {len(radar_detections["id_track"].unique())} unique tracks')
         print(f'After 1-1 matching towards ais tracks: {len(matched_detections)} observations and {len(matched_detections["id_track"].unique())} unique tracks')
         print(f'After removing tracks <50 observations: {len(valid_detections)} observations and {len(valid_detections["id_track"].unique())} unique tracks')
@@ -135,5 +145,5 @@ if __name__ == '__main__':
     ais_track_path = '../../data/tracks_ais.csv'
     radar_detection_path = '../../data/detections_radar.csv'
     processed_radar_data = preprocess_data(ais_track_path, radar_detection_path, print_mode=True)
-    save_path = '../../data/cleaned_data/processed_radar_detections.csv'
+    save_path = '../../data/cleaned_data/preprocessed_radar_detections.csv'
     processed_radar_data.to_csv(save_path, index=False)
