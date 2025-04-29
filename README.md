@@ -12,6 +12,7 @@ Experimentation with computer vision based models
   * Highlights the need to perform some form of data augmentation
   * "fishing" can be misleading to the model -> It contains some tracks that should belong to seine, trawl, lobster, or hook, but specific label could not be determined due to a lack of annotation.
   * ResNet is not as effective at vessel type prediction compared to activity: 90% Train Accuracy, 75% Validation Accuracy. Still overfitting. (Too much variance of track pattern within each vessel type?)
+  * Currnetly not considering to try deeper models (eg. ResNet-50 or ViT) since moderately large models are already overfitting.
  
 Next Steps:
 * Incorporate XGBoost activity prediction model to assist the labeling of more activity data points (especially for fishing activities)
