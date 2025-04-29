@@ -101,7 +101,6 @@ def CNN_train(model, train_data, valid_data, num_epochs,
             images = images.to(device)
             targets = targets.to(device)
             
-            
             optimizer.zero_grad()
             # Depending on the model architecture
             out = model(images)
