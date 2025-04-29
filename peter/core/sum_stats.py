@@ -56,7 +56,8 @@ class SumStats:
             "turning_std"    : self._circular_std(turning),
             "distance_total" : np.sum(group['distance_diff']),
             "distance_o"     : group['distance_from_origin'].quantile(0.95),
-            "detections"     : n_detect
+            "detections"     : n_detect,
+            "type_m2_agg"    : group['type_m2_agg'].iloc[0]
         }
         return pd.Series(track_summary)
     
