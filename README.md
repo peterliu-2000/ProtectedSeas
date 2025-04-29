@@ -6,7 +6,7 @@ Experimentation with computer vision based models
   * Green channel: Average speed of detection points within each pixel (clipped to range (0, 25.5))
   * Blue channel: Average turning of detection points within each pixel (clipped to range (0, 180) unit: degree)
 * ResNet-18 Model vastly overfits to the training data even with moderate dropout (p = 0.2, at the end of each resnet block)
-  * Training Accuracy: 0.99, Validation Accuracy: 0.89
+  * Training Accuracy: 0.99, Validation Accuracy: 0.89 (XGBoost has 0.92 validation accuracy)
   * Model is really struggling with Hook and Line: very likely to label it as transit, drifting and lobster.
   * Generalization gap presumably caused by the lack of observations in certain activity classes (eg. purse seine, trawl, lobster, hook and line)
   * Highlights the need to perform some form of data augmentation
