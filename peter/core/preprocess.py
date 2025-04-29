@@ -8,7 +8,7 @@ def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     Main preprocess pipeline on radar_detections:
         1. One-to-one matching between ais_tracks and radar_detections (results match with Songyu's)
         2. Remove tracks with less than 50 detections counts
-        3. Remove disrupted tracks if max instant speed >= 150 
+        3. Remove disrupted tracks if max instant speed >= 150 knots
 
     Inputs: original ais_track and radar_detection data path
     Returns: preprocessed radar_detections
@@ -138,9 +138,22 @@ class DisruptionFilter:
         c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
         return r * c
     
+def extract_type_label(ais_track_path):
+    ais_tracks = pd.read_csv(ais_track_path)
+    type_df = ais_tracks[['id_track', 'type_m2']]
+    return type_df
+
+
+
 if __name__ == '__main__':
     ais_track_path = '../../data/tracks_ais.csv'
     radar_detection_path = '../../data/detections_radar.csv'
     processed_radar_data = preprocess_data(ais_track_path, radar_detection_path, print_mode=True)
     save_path = '../../data/cleaned_data/preprocessed_radar_detections.csv'
     processed_radar_data.to_csv(save_path, index=False)
+
+    ais_label_path = '../../data/ais_type_labels.csv'
+    ais_labels = extract_type_label(ais_track_path)
+    ais_labels.to_csv(ais_label_path, index=False)
+
+
