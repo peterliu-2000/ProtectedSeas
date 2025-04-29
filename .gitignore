@@ -64,3 +64,6 @@ mlruns/
 # Images
 *.jpg
 *.png
+
+#paper
+papers/
