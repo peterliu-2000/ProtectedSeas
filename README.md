@@ -1,6 +1,21 @@
+## April 29, W5
+
 ## April 22, W4
 
-Experimentation with computer vision based models
+**Preprocessing**: Establish preprocessing pipeline on raw `radar_detections` that:
+1. One-to-one matching between ais_tracks and radar_detections (results match with Songyu's)
+2. Remove tracks with less than 50 detections counts
+3. Remove disrupted tracks if max instant speed >= 150 (~8% removed)
+Results ~14K radar tracks for later use
+
+**Time-series Modelling**: Treating each detection track as a (T_max, M) matrix, where T_max is padded to the longest sequence in batch, and M features (speed, heading, lat, lon).Fitted preliminary GRU on time-series, concat final hidden layers with sum_stats. Very poor fitting tho with 53% overall acc on test set compared to 76% on XGboost. More literature research on this aspect
+
+**Activity**: From Songyu's labelled activity data, XGboost can do rly well (almost 100% sensitiviy) on transit and stopped trajectories. Can use this model to infer on `radar_detections` activity type, and remove tracks in transit to focus on the rest, more interesting trajectories.
+* Good for **type-activity seperation**: e.g. some AIS-labelled fishing tracks seem to just in transit in `radar_detections`, which shouldn't be of any concern to authority.
+* In the remaining tracks, the boat is likely doing something which is definitely correlated with its type: better use of AIS labels
+
+
+### CNN: Computer-Vision Based Model Experiment
 * Rasterized vessel trajectory according to methods outlined in this paper: https://arxiv.org/html/2401.01676v1
   * Red channel: Number of detection points within each pixel (capped at 255)
   * Green channel: Average speed of detection points within each pixel (clipped to range (0, 25.5))
@@ -18,11 +33,6 @@ Next Steps:
 * Incorporate XGBoost activity prediction model to assist the labeling of more activity data points (especially for fishing activities)
 * Merge observations in the "fishing" class to one of the four predefined fishing activities
 * Selectively perform data augmentation (eg. only perform data augmentation for the fishing activity classes)
-
-
-Preprocessing pipeline:
-* Songyu: push ais <-> radar detections matched data online
-* Remove disrupted (turns out to be 8%) by finding any group with observation of >= 150 knots instantaneous speed
 
 
 ## April 15, W3

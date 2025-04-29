@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import warnings
-from vessel_agg import VesselTypeAggregator
 
 def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     """"
@@ -38,9 +37,7 @@ def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
 
     #grab type_m2 from ais_tracks & aggregate into type_m2_agg
     #drop unnecessary columns
-    final_detections = pd.merge(non_disrupted_detections, ais_tracks[['id_track', 'type_m2']], left_on = 'assoc_id', right_on = 'id_track', how = 'inner')
-    final_detections.rename(columns={'id_track_x': 'id_track'}, inplace=True)
-    final_detections.drop(columns=['id_track_y', 'latitude_prev', 'longitude_prev', 'time_prev', 'distance_diff', 'time_diff', 'instant_speed','disrupted'], inplace=True)
+    non_disrupted_detections.drop(columns=['latitude_prev', 'longitude_prev', 'time_prev', 'distance_diff', 'time_diff', 'instant_speed','disrupted', 'cdate', 'ctime'], inplace=True)
     print(' ---- Aggregate vessel type & unnecessary columns dropped ----')
 
     if print_mode:
@@ -50,7 +47,7 @@ def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
         print(f'After removing tracks <50 observations: {len(valid_detections)} observations and {len(valid_detections["id_track"].unique())} unique tracks')
         print(f'After removing disrupted tracks: {len(non_disrupted_detections)} observations and {len(non_disrupted_detections["id_track"].unique())} unique tracks')
 
-    return final_detections
+    return non_disrupted_detections
 
 def one_to_one_matching(ais_tracks, radar_detections):
 
