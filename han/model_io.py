@@ -42,9 +42,3 @@ def load_from_checkpoint(path, model, optimizer = None, scheduler = None):
     if scheduler is not None and checkpoint["scheduler_state_dict"] is not None:
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
     return checkpoint["log"]
-
-def save_loss(path, loss):
-    num_epoch = len(loss)
-    loss_df = np.array([1 + np.arange(num_epoch), loss]).T
-    np.savetxt(path, loss_df, delimiter=",", comments = "",
-               header = "Epoch, Loss", fmt = ["%d", "%.10f"])
