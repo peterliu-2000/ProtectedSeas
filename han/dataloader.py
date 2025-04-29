@@ -43,6 +43,34 @@ class VesselActivityDataset(Dataset):
         # Convert the activity code to label
         y = ACT_to_LABEL[act]
         return img, y
+    
+class VesselTypeDataset(Dataset):
+    def __init__(self, label_directory, image_directory, transform = None) -> None:
+        self.labels = pd.read_csv(label_directory)
+        self.image_path = image_directory
+        self.transform = transform if transform is not None else \
+            transforms.Compose([
+                transforms.Resize((IMAGE_HEIGHT, IMAGE_HEIGHT)), # Resize to ResNet compliant size
+                transforms.ToTensor() 
+            ])
+        
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        # Read the corresponding row from the label dataset
+        record = self.labels.iloc[idx]
+        id, vessel_type = record["id_track"], record["type_m2_agg"]
+        
+        img_name = str(id) + IMAGE_FILETYPE
+        img = Image.open(os.path.join(self.image_path, img_name))
+        
+        if self.transform:
+            img = self.transform(img)
+            
+        # Convert the activity code to label
+        y = TYPE_to_LABEL[vessel_type]
+        return img, y
 
 def collate_fn(batch):
     images, targets = zip(*batch)  # Unzip images and targets
@@ -71,4 +99,8 @@ def data_split(dataset, batch_size, val_prob = 0.2, num_workers = 1):
     
 def get_activity_datasets(label_directory, image_directory, batch_size, val_prob = 0.2):
     dataset = VesselActivityDataset(label_directory, image_directory)
+    return data_split(dataset, batch_size, val_prob)
+
+def get_type_datasets(label_directory, image_directory, batch_size, val_prob = 0.2):
+    dataset = VesselTypeDataset(label_directory, image_directory)
     return data_split(dataset, batch_size, val_prob)
