@@ -1,5 +1,23 @@
 ## April 22, W4
 
+Experimentation with computer vision based models
+* Rasterized vessel trajectory according to methods outlined in this paper: https://arxiv.org/html/2401.01676v1
+  * Red channel: Number of detection points within each pixel (capped at 255)
+  * Green channel: Average speed of detection points within each pixel (clipped to range (0, 25.5))
+  * Blue channel: Average turning of detection points within each pixel (clipped to range (0, 180) unit: degree)
+* ResNet-18 Model vastly overfits to the training data even with moderate dropout (p = 0.2, at the end of each resnet block)
+  * Training Accuracy: 0.99, Validation Accuracy: 0.89
+  * Model is really struggling with Hook and Line: very likely to label it as transit, drifting and lobster.
+  * Generalization gap presumably caused by the lack of observations in certain activity classes (eg. purse seine, trawl, lobster, hook and line)
+  * Highlights the need to perform some form of data augmentation
+  * "fishing" can be misleading to the model -> It contains some tracks that should belong to seine, trawl, lobster, or hook, but specific label could not be determined due to a lack of annotation.
+  * ResNet is not as effective at vessel type prediction compared to activity: 90% Train Accuracy, 75% Validation Accuracy. Still overfitting. (Too much variance of track pattern within each vessel type?)
+  * Currnetly not considering to try deeper models (eg. ResNet-50 or ViT) since moderately large models are already overfitting.
+ 
+Next Steps:
+* Incorporate XGBoost activity prediction model to assist the labeling of more activity data points (especially for fishing activities)
+* Merge observations in the "fishing" class to one of the four predefined fishing activities
+* Selectively perform data augmentation (eg. only perform data augmentation for the fishing activity classes)
 
 
 Preprocessing pipeline:
