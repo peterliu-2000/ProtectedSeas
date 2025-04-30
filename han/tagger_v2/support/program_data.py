@@ -93,8 +93,7 @@ class ProgramData():
         """
         Eagerly fill all summary statistics values.
         """
-        for i in tqdm(range(self.num_tracks), desc = "Computing Summaries...", leave = False):
-            self.get_summary(i)
+        self.summaries = sum_gen.compute_all_summaries(self.detections, self.tracks["id_track"])
         # Also fills predictions
         self.predict_label = np.array(model_predict(self.model, self.summaries))
         self.predict_probs = np.array(model_predict(self.model, self.summaries, False))

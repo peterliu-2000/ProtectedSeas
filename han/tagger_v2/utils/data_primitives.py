@@ -52,9 +52,9 @@ def read_and_init_track_df(filename):
     if "valid" not in columns:
         df["valid"] = np.ones(df_length)
         
-    if "confidence" not in columns:
-        df["confidence"] = ["N/A"] * df_length    
-
+    # Sort the data frame by id_track and only return relevant columns
+    df = df.sort_values(by = "id_track", ascending=True)
+    # [["id_track", "activity", "type_m2_agg", "valid"]]
     return df
 
 def read_and_init_detections_df(filename, save = True):
