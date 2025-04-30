@@ -85,7 +85,7 @@ class SumStats:
         
         # Compute some deltas (length: n_detect - 1)
         delta_course1 = np.abs(course - course.shift(1))[1:]
-        delta_course = delta_course1
+        delta_course = np.where(delta_course1 < 180, delta_course1, delta_course1 - 180)
         
         # Compute pointwise distances
         def dist_helper_1(i):
