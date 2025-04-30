@@ -193,8 +193,9 @@ if __name__ == "__main__":
     from PIL import Image
     rasterizer = VesselTrajectoryRasterize(224, 224, detections)
     idx = np.random.choice(len(tracks))
-    id = tracks.iloc[idx]["id_track"]
-    print(tracks.iloc[idx]["activity"])
+    # id = tracks.iloc[idx]["id_track"]
+    # print(tracks.iloc[idx]["activity"])
+    id = 36683082 
     result = rasterizer(id)
     print(np.max(result[:,:,0]),np.max( result[:,:,1]), np.max(result[:,:,2]))
 
