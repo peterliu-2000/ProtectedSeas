@@ -22,3 +22,5 @@ def model_predict(model, X, label = True):
     else:
         return model["model"].predict_proba(X[model["features"]])
         
+def get_label_encodings(model):
+    return model["label_map"]

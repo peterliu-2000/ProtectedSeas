@@ -24,6 +24,14 @@ class SumStats:
             "distance_o","detections","p95_speed","p5_speed","med_speed",
             "start_time", "end_time"], index = range(length))
         
+        
+    def compute_all_summaries(self, detections:pd.DataFrame, track_ids = None):
+        if track_ids is not None:
+            summary_df = detections[detections["id_track"].isin(track_ids)]
+        summary_df = detections.groupby("id_track").apply(self.compute_track_features)
+        summary_df = summary_df.sort_values(by = "id_track", ascending=True) # Sort by track id so it matches with the program implementation
+        return summary_df
+        
     # Additional Helper Mathematical Functions:
     @staticmethod
     def _haversine_distance(lat1, lon1, lat2, lon2, r = 6371):
@@ -60,9 +68,9 @@ class SumStats:
         n_detect = len(detections)
         
         # Correct the course vector to be in range [-180, 180]
-        course = detections["course"].apply(lambda x: x - 360 if x > 180 else x)
-        headingCos = np.cos(detections["course"] * np.pi / 180)
-        headingSin = np.sin(detections["course"] * np.pi / 180)
+        course = detections["course"].apply(lambda x: x - 380 if x > 180 else x)
+        headingCos = np.cos(course * np.pi / 180)
+        headingSin = np.sin(course * np.pi / 180)
         
         # Compute the mean and std of these trig vectors
         meanCos = np.mean(headingCos)
@@ -77,28 +85,27 @@ class SumStats:
         delta_course = np.where(delta_course < 180, delta_course, delta_course - 180)
         
         # Compute pointwise distances
-        def dist_helper_1(i):
-            return self._haversine_distance(
-                detections["latitude"].iloc[i], detections["longitude"].iloc[i],
-                detections["latitude"].iloc[i+1], detections["longitude"].iloc[i+1]
-            )
         
-        
-        distances = [dist_helper_1(i) for i in range(n_detect - 1)]
+        latitude_prev = detections["latitude"].shift(1)[1:]
+        longitude_prev = detections["longitude"].shift(1)[1:]
+        distances = self._haversine_distance(latitude_prev, longitude_prev,
+                                             detections["latitude"].iloc[1:],
+                                             detections["longitude"].iloc[1:])
         
         # Compute the distances from the origin:
-        def dist_helper_2(i):
-            return self._haversine_distance(
-                detections["latitude"].iloc[0], detections["longitude"].iloc[0],
-                detections["latitude"].iloc[i+1], detections["longitude"].iloc[i+1]
-            )
-        distances_from_origin = [dist_helper_2(i) for i in range(n_detect - 1)]
+        distances_from_origin = self._haversine_distance(
+            detections["latitude"].iloc[0], detections["longitude"].iloc[0],
+            detections["latitude"], detections["longitude"]
+        )
         
         # Compute the straight line distance between start and end points
         straight_distance = self._haversine_distance(
                 detections["latitude"].iloc[0], detections["longitude"].iloc[0],
                 detections["latitude"].iloc[-1], detections["longitude"].iloc[-1]
-            )
+        )
+        
+        if np.allclose(straight_distance, 0): # Correct for division by 0
+            straight_distance = straight_distance + 1e-8
 
         # Speed is in kts, Distance is in km, Heading / Turning in Deg
         track_summary = {

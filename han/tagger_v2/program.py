@@ -213,7 +213,11 @@ class TrackInfo(AppFrame):
         for i, dynamic_txt in enumerate(self.dynamic_text.values()):
             grid(dynamic_txt, row = i, column = 1, sticky = "w")
             
-        configure_grid(self, row_weights=[1]*15, col_weights=[1,1])
+        self.button = button(self, "Show Model Prediction Details", self.show_more)
+        
+        grid(self.button, row = 16, column = 0, sticky = "nsew", columnspan = 2)
+            
+        configure_grid(self, row_weights=[1]*17, col_weights=[1,1])
 
     def refresh(self):
         # Obtain the observation data 
@@ -240,7 +244,7 @@ class TrackInfo(AppFrame):
             update_label(v, obtain_new_text(k))
             
     def show_more(self):
-        self.parent.open_track_summary()
+        self.parent.open_model_window()
                 
 
 class TrackTags(AppFrame):
@@ -451,6 +455,51 @@ class FilePopUp(AppWindow):
         self.parent.track_path = self.track_path
         self.parent.detections_path = self.detections_path
         self.parent.file_load_window = None
+        self.destroy()
+        
+class ModelDetail(AppWindow):
+    def __init__(self, container, **kwargs):
+        super().__init__(container, **kwargs)
+        self.title("Model Prediction Scores")
+        self.resizable(False, False)
+        self.geometry("320x160")
+        self.configure(background='white')
+        
+        # Define static text labels:
+        self.static_text = [ label(self, item + ":") for item in ACT_NAMES]
+        self.static_text.pop(-1)
+        
+        for i, static_txt in enumerate(self.static_text):
+            grid(static_txt, row = i, column = 0, sticky = "w")
+            
+            
+        # Define dynamic text labels:
+        # The keys are used to identify the data frame columns
+        self.dynamic_text = {k: label(self, "N/A") for k in ACT_CODE}
+        self.dynamic_text.pop("")
+        
+        for i, k in enumerate(ACT_CODE):
+            if len(k) == 0: continue
+            grid(self.dynamic_text[k], row = i , column = 1, sticky = "w")
+            
+        configure_grid(self, row_weights=[1]*len(self.static_text), col_weights=[1,1])
+        
+        self.protocol("WM_DELETE_WINDOW", self.close_window)
+        if self.parent.data is not None and self.parent.current_track_data is not None:
+            self.refresh()
+        
+    def refresh(self):
+        # Obtain the observation data 
+        encodings = get_label_encodings(self.parent.data.model)
+        current = self.parent.idx_obs
+        _, predictions = self.parent.data.get_model_prediction(current)
+        for index, value in enumerate(predictions):
+            code = encodings[index]
+            update_label(self.dynamic_text[code], np.round(value, 5))
+            
+    def close_window(self):
+        # Clear the window in main application
+        self.parent.model_window = None
         self.destroy()
         
 # class DataWindow(AppWindow):
@@ -687,8 +736,7 @@ class MainApp(tk.Tk):
         # Windows
         self.data_control_window = None
         self.file_load_window = None
-        self.track_summary_window = None
-        self.legacy_tags_window = None
+        self.model_window = None
         
         # Bind Hotkeys:
         self.bind("<Left>", self.prev)
@@ -743,6 +791,17 @@ class MainApp(tk.Tk):
         print("File Import Successful")
         self.refresh()
         
+        
+    def open_model_window(self):
+        if self.data is None: 
+            messagebox.showerror(title = "No Data Loaded.", message = "Please Load Data Files First.")
+            return
+        if self.model_window is not None:
+            self.model_window.focus()
+            return
+        
+        self.model_window = ModelDetail(self)
+        
     def open_data_controls(self):
         pass
     #     if self.data is None: 
@@ -773,6 +832,8 @@ class MainApp(tk.Tk):
         self.current_track_summ = self.data.get_summary(self.idx_obs)
         id = self.current_track_data["id_track"]
         
+        print(self.current_track_data[7:17])
+        
         try:
             self.current_trajectory = self.data.get_trajectory(id)
         except RuntimeWarning as e:
@@ -785,10 +846,10 @@ class MainApp(tk.Tk):
         self.track_map_frame.refresh()
         if self.data_control_window is not None:
             self.data_control_window.refresh()
-        if self.track_summary_window is not None:
-            self.track_summary_window.refresh()
-        if self.legacy_tags_window is not None:
-            self.legacy_tags_window.refresh()
+        if self.model_window is not None:
+            self.model_window.refresh()
+        # if self.legacy_tags_window is not None:
+        #     self.legacy_tags_window.refresh()
         
     def save(self):
         """
@@ -800,8 +861,8 @@ class MainApp(tk.Tk):
         if self.current_track_data is None:
             return
         self.track_tags_frame.save()
-        if self.legacy_tags_window is not None:
-            self.legacy_tags_window.save()
+        # if self.legacy_tags_window is not None:
+        #     self.legacy_tags_window.save()
         
         
         # Propagate the update to the data frame. (Copy on write principle)
