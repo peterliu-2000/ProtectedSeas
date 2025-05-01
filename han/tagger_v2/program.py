@@ -502,183 +502,174 @@ class ModelDetail(AppWindow):
         self.parent.model_window = None
         self.destroy()
         
-# class DataWindow(AppWindow):
-#     def __init__(self, parent, takefocus = True):
-#         super().__init__(parent, takefocus=takefocus)
-#         self.title("Data Controls")
-#         self.resizable(False, False)
-#         self.geometry("600x200")
-#         self.configure(background='white')
+class DataWindow(AppWindow):
+    def __init__(self, parent, takefocus = True):
+        super().__init__(parent, takefocus=takefocus)
+        self.title("Data Controls")
+        self.resizable(False, False)
+        self.geometry("600x200")
+        self.configure(background='white')
         
-#         # Display Names for activity and type
-#         self.act_display_name = tk.StringVar(value="All")
-#         self.type_display_name = tk.StringVar(value="All")
+        # Display Names for activity and type
+        self.act_display_name = tk.StringVar(value="All")
+        self.type_display_name = tk.StringVar(value="All")
+        self.model_display_name = tk.StringVar(value = "All")
         
-#         # Go To Entry Controls
-#         self.goto_label = label(self, "Go to Entry: ")
-#         grid(self.goto_label, row = 0, column = 0, sticky = "w")
+        # Go To Entry Controls
+        self.goto_label = label(self, "Go to Entry:")
+        grid(self.goto_label, row = 0, column = 0, sticky = "w")
         
-#         self.goto_textbox = tk.Entry(self)
-#         grid(self.goto_textbox, row = 0, column = 1, sticky = "nsew", columnspan = 2)
+        self.goto_textbox = tk.Entry(self)
+        grid(self.goto_textbox, row = 0, column = 1, sticky = "nsew", columnspan = 2)
         
-#         self.goto_button = button(self, "Go", self.go_to)
-#         grid(self.goto_button, row = 0, column = 3, sticky = "nsew")
+        self.goto_button = button(self, "Go", self.go_to)
+        grid(self.goto_button, row = 0, column = 3, sticky = "nsew")
         
-#         # Data Filtering Texts:
-#         self.left_labels = [
-#             label(self, "Data Filters"),
-#             label(self, "By Activity"),
-#             label(self, "By Vessel Type"),
+        # Data Filtering Texts:
+        self.left_labels = [
+            label(self, "Data Filters"),
+            label(self, "By Activity"),
+            label(self, "By Vessel Type"),
+            label(self, "By Model Prediction"),
+        ]
+        
+        for i, l in enumerate(self.left_labels):
+            grid(l, row = i + 1, column = 0, sticky = "w")
             
-#         ]
-#         for i, l in enumerate(self.left_labels):
-#             grid(l, row = i + 1, column = 0, sticky = "w")
+        self.counter = label(self, "Nan / Nan")
+        grid(self.counter, row = 1, column = 3, sticky = "e")
+        
+        # Filter Dropdown Menus: 
+        self.act_menu = ttk.Combobox(self, textvariable=self.act_display_name)
+        self.act_menu["values"] = ["All"] + ACT_NAMES 
+        self.act_menu.current(0)
+        grid(self.act_menu, row = 2, column = 1, sticky = "nsew", columnspan = 3)
             
-#         self.counter = label(self, "Nan / Nan")
-#         grid(self.counter, row = 1, column = 3, sticky = "e")
+        self.type_menu = ttk.Combobox(self, textvariable=self.type_display_name)
+        self.type_menu["values"] = ["All"] + TYPE_NAMES[1:]
+        self.type_menu.current(0)
+        grid(self.type_menu, row = 3, column = 1, sticky = "nsew", columnspan = 3)
         
-#         # Filter Dropdown Menus: 
-#         self.act_menu = ttk.Combobox(self, textvariable=self.act_display_name)
-#         self.act_menu["values"] = ACT_NAMES + ["All"]
-#         self.act_menu.current(0)
-#         grid(self.act_menu, row = 2, column = 1, sticky = "nsew", columnspan = 3)
+        self.mod_menu = ttk.Combobox(self, textvariable=self.model_display_name)
+        self.mod_menu["values"] = ["All"] + ACT_NAMES[:-1]
+        self.mod_menu.current(0)
+        grid(self.mod_menu, row = 4, column = 1, sticky = "nsew", columnspan = 3)
+        
+                    
+        
+        # Other Filtering Options and Checkboxes    
+        self.confidence_text = [
+            label(self,"Prediction Low Threshold:"),
+            label(self,"Prediction High Threshold:")
+        ]
+        self.confidence_entry = [tk.Entry(self), tk.Entry(self)]
+        for i, (e, t) in enumerate(zip(self.confidence_entry, self.confidence_text)):
+            grid(t, row = 5 + i, column = 0, sticky = "w", columnspan = 1)
+            grid(e, row = 5 + i, column = 1, sticky = "nsew", columnspan = 3)
             
-#         self.type_menu = ttk.Combobox(self, textvariable=self.type_display_name)
-#         self.type_menu["values"] = TYPE_NAMES
-#         self.type_menu.current(0)
-#         grid(self.type_menu, row = 3, column = 1, sticky = "nsew", columnspan = 3)
-        
-#         # Confidence Filtering Options
-#         self.confidence_text = [
-#             label(self,"Confidence Low:"),
-#             label(self,"Confidence High:")
-#         ]
-#         self.confidence_entry = [tk.Entry(self), tk.Entry(self)]
-#         for i, (e, t) in enumerate(zip(self.confidence_entry, self.confidence_text)):
-#             grid(t, row = 4 + i, column = 0, sticky = "w")
-#             grid(e, row = 4 + i, column = 1, sticky = "nsew")
-        
-#         # Other Filtering Options and Checkboxes
-#         self.filter_options = {
-#             "valid_only" : "Show Valid Tracks",
-#             "has_notes" : "Show Tracks w/ Notes",
-#         }
+        # Bottom Buttons 
+        self.controls = [
+            button(self, "Prev Record", self.parent.prev),
+            button(self, "Next Record", self.parent.next),
+            button(self, "Clear Filter", self.clear_filter),
+            button(self, "Apply Filter", self.apply_filter)
+        ]
+        for i, b in enumerate(self.controls):
+            grid(b, row = 7, column = i, sticky = "nsew")
             
-#         self.cbox_vars = dict()
-#         self.cbox_buttons = dict()
-#         for elet in self.filter_options:
-#             self.cbox_vars[elet] = tk.IntVar(self, value = 0)
-#             self.cbox_buttons[elet] = checkbutton(self, self.filter_options[elet], self.cbox_vars[elet])
+        configure_grid(self, row_weights=[1,1,1,1,1,1,1], col_weights=[1,1,1,1])
+        self.protocol("WM_DELETE_WINDOW", self.close_window)
+        self.refresh()
         
-#         for i,k in enumerate(["valid_only", "has_notes"]):
-#             row = 4 + (i // 2)
-#             col = 2 + (i % 2)
-#             grid(self.cbox_buttons[k], row = row, column = col, sticky = "w")
+    def apply_filter(self, _event = None):
+        """
+        Do some preliminary checks with user input and then send the
+        filtering data to the main application
+        """
+        # First, query all the filter menus to get the codes for filters
+        try:
+            act_code = ACT_NAME_2_CODE[self.act_menu.get()]
+        except KeyError:
+            act_code = None
+        try:
+            type_code = TYPE_NAME_2_CODE[self.type_menu.get()]
+        except KeyError:
+            type_code = None
+        try:
+            model_act_code = ACT_NAME_2_CODE[self.mod_menu.get()]
+        except KeyError:
+            model_act_code = None
+        
+        conf_lo = self.confidence_entry[0].get()
+        conf_hi = self.confidence_entry[1].get()
+        
+        # Do some preliminary check with the entered confidence filter values:
+        try:
+            conf_lo = float(conf_lo) if conf_lo else 0.0
+            conf_hi = float(conf_hi) if conf_hi else 1.0            
+        except ValueError:
+            messagebox.showerror(title="Bad Entry.", message= f"Expects floating point values for confidence.")
+            return
             
-#         # Bottom Buttons 
-#         self.controls = [
-#             button(self, "Prev Record", self.parent.prev),
-#             button(self, "Next Record", self.parent.next),
-#             button(self, "Clear Filter", self.clear_filter),
-#             button(self, "Apply Filter", self.apply_filter)
-#         ]
-#         for i, b in enumerate(self.controls):
-#             grid(b, row = 6, column = i, sticky = "nsew")
+        if max(conf_lo, conf_hi) > 1.0 or min(conf_lo, conf_hi) < 0.0 or conf_lo >= conf_hi:
+            messagebox.showerror(title="Bad Entry.", message= f"Invalid confidence bounds.")
+            return
+        
+        # Parse the filter values as a dictionary and pass it to main application
+        filter_parameters = dict()
+        filter_parameters["tag"] = act_code
+        filter_parameters["type"] = type_code
+        filter_parameters["pred"] = model_act_code
+        filter_parameters["confidence_low"] = conf_lo
+        filter_parameters["confidence_high"] = conf_hi
+        
+        self.parent.apply_filter(filter_parameters)
+        
+        self.refresh()
+        
+    def clear_filter(self, _event = None):
+        self.parent.clear_filter()
+        self.refresh()
+        
+        
+    def refresh(self):
+        # Load the filter configuration from the application
+        params = self.parent.filter_parameters
+        # Obtain string representations of the parameters
+        try:
+            self.act_display_name.set(ACT_CODE_2_NAME[params["tag"]])
+        except KeyError:
+            self.act_display_name.set("All")
+        tmp = TYPE_CODE_2_NAME[params["type"]]
+        self.type_display_name.set(tmp if len(tmp) > 0 else "All")
+        self.confidence_entry[0].delete(0, tk.END)
+        self.confidence_entry[1].delete(0, tk.END)
+        self.confidence_entry[0].insert(tk.END, str(params["confidence_low"]))
+        self.confidence_entry[1].insert(tk.END, str(params["confidence_high"]))
             
-#         configure_grid(self, row_weights=[1,1,1,1,1,1,1], col_weights=[1,1,1,1])
-#         self.protocol("WM_DELETE_WINDOW", self.close_window)
-#         self.refresh()
-        
-#     def apply_filter(self, _event = None):
-#         """
-#         Do some preliminary checks with user input and then send the
-#         filtering data to the main application
-#         """
-#         # First, query all the filter menus to get the codes for filters
-#         act_code = None
-#         try:
-#             act_code = ACT_NAME_2_CODE[self.act_menu.get()]
-#         except KeyError:
-#             act_code = None
-#         type_code = TYPE_NAME_2_CODE[self.type_menu.get()]
-     
-        
-#         conf_lo = self.confidence_entry[0].get()
-#         conf_hi = self.confidence_entry[1].get()
-        
-#         valid = self.cbox_vars["valid_only"].get()
-#         notes = self.cbox_vars["has_notes"].get()
-    
-#         # Do some preliminary check with the entered confidence filter values:
-#         try:
-#             conf_lo = float(conf_lo) if conf_lo else 0.0
-#             conf_hi = float(conf_hi) if conf_hi else 1.0            
-#         except ValueError:
-#             messagebox.showerror(title="Bad Entry.", message= f"Expects floating point values for confidence.")
-#             return
-            
-#         if max(conf_lo, conf_hi) > 1.0 or min(conf_lo, conf_hi) < 0.0 or conf_lo >= conf_hi:
-#             messagebox.showerror(title="Bad Entry.", message= f"Invalid confidence bounds.")
-#             return
-        
-#         # Parse the filter values as a dictionary and pass it to main application
-#         filter_parameters = dict()
-#         filter_parameters["tag"] = act_code
-#         filter_parameters["type"] = type_code
-#         filter_parameters["has_notes"] = bool(notes)
-#         filter_parameters["valid_only"] = bool(valid)
-#         filter_parameters["confidence_low"] = conf_lo
-#         filter_parameters["confidence_high"] = conf_hi
-        
-#         self.parent.apply_filter(filter_parameters)
-        
-#         self.refresh()
-        
-#     def clear_filter(self, _event = None):
-#         self.parent.clear_filter()
-#         self.refresh()
-        
-        
-#     def refresh(self):
-#         # Load the filter configuration from the application
-#         params = self.parent.filter_parameters
-#         # Obtain string representations of the parameters
-#         try:
-#             self.act_display_name.set(ACT_CODE_2_NAME[params["tag"]])
-#         except KeyError:
-#             self.act_display_name.set("All")
-#         self.type_display_name.set(TYPE_CODE_2_NAME[params["type"]])
-#         self.confidence_entry[0].delete(0, tk.END)
-#         self.confidence_entry[1].delete(0, tk.END)
-#         self.confidence_entry[0].insert(tk.END, str(params["confidence_low"]))
-#         self.confidence_entry[1].insert(tk.END, str(params["confidence_high"]))
-        
-#         for k, v in self.cbox_vars.items():
-#             v.set(params[k])
-            
-#         update_label(self.counter, f"{self.parent.filter_num_obs} / {self.parent.num_obs}")
+        update_label(self.counter, f"{self.parent.filter_num_obs} / {self.parent.num_obs}")
 
-#     def go_to(self):
-#         """
-#         Triggers application level index seeking function
-#         """
-#         text_string = self.goto_textbox.get().strip()
-#         self.goto_textbox.delete(0, tk.END)
-#         # Bad Entry
-#         if not text_string.isnumeric():
-#             messagebox.showerror(title="Bad Entry.", message= f"Expects a numerical index. Entered '{text_string}'.")
-#             return
-#         # Out of bounds
-#         index = int(text_string)
-#         if index >= self.parent.num_obs or index < 0:
-#             messagebox.showerror(title="Bad Entry.", message= f"Entered index '{index}' is out of bounds.")
-#             return
-#         self.parent.goto(index)
+    def go_to(self):
+        """
+        Triggers application level index seeking function
+        """
+        text_string = self.goto_textbox.get().strip()
+        self.goto_textbox.delete(0, tk.END)
+        # Bad Entry
+        if not text_string.isnumeric():
+            messagebox.showerror(title="Bad Entry.", message= f"Expects a numerical index. Entered '{text_string}'.")
+            return
+        # Out of bounds
+        index = int(text_string)
+        if index >= self.parent.num_obs or index < 0:
+            messagebox.showerror(title="Bad Entry.", message= f"Entered index '{index}' is out of bounds.")
+            return
+        self.parent.goto(index)
         
-#     def close_window(self):
-#         # Set the parent's data control window to None
-#         self.parent.data_control_window = None
-#         self.destroy()
+    def close_window(self):
+        # Set the parent's data control window to None
+        self.parent.data_control_window = None
+        self.destroy()
         
 
         
@@ -691,7 +682,7 @@ class ModelDetail(AppWindow):
 class MainApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Vessel Activity Tagger (Ver. 0.2.1)")
+        self.title("Vessel Activity Tagger (Ver. 0.2.3a)")
         self.resizable(False, False)
         self.geometry("1280x720")
         self.configure(background='black')
@@ -747,10 +738,9 @@ class MainApp(tk.Tk):
         # self.data.fill_all_summaries()
             
     def load_from_default(self):
-        # Try loading from default
         try:
             data = ProgramData(default_track, default_detections)
-        except Exception:
+        except KeyboardInterrupt:
             print("Data cannot be loaded from default path, please manually load the data")
             return
         else:
@@ -803,17 +793,14 @@ class MainApp(tk.Tk):
         self.model_window = ModelDetail(self)
         
     def open_data_controls(self):
-        pass
-    #     if self.data is None: 
-    #         messagebox.showerror(title = "No Data Loaded.", message = "Please Load Data Files First.")
-    #         return
-    #     if self.data_control_window is not None:
-    #         self.data_control_window.focus()
-    #         return
+        if self.data is None: 
+            messagebox.showerror(title = "No Data Loaded.", message = "Please Load Data Files First.")
+            return
+        if self.data_control_window is not None:
+            self.data_control_window.focus()
+            return
         
-        # self.data_control_window = DataWindow(self)
-        
-        
+        self.data_control_window = DataWindow(self)
         
     def reload_map(self):
         self.track_map_frame.destroy()
@@ -832,14 +819,11 @@ class MainApp(tk.Tk):
         self.current_track_summ = self.data.get_summary(self.idx_obs)
         id = self.current_track_data["id_track"]
         
-        print(self.current_track_data[7:17])
-        
         try:
             self.current_trajectory = self.data.get_trajectory(id)
-        except RuntimeWarning as e:
+        except RuntimeWarning:
             # Use some default lat long instead...
             self.current_trajectory = [[37.432, -122.170]]
-            print(e)
         
         self.track_info_frame.refresh()
         self.track_tags_frame.refresh()
@@ -848,8 +832,6 @@ class MainApp(tk.Tk):
             self.data_control_window.refresh()
         if self.model_window is not None:
             self.model_window.refresh()
-        # if self.legacy_tags_window is not None:
-        #     self.legacy_tags_window.refresh()
         
     def save(self):
         """
@@ -861,9 +843,6 @@ class MainApp(tk.Tk):
         if self.current_track_data is None:
             return
         self.track_tags_frame.save()
-        # if self.legacy_tags_window is not None:
-        #     self.legacy_tags_window.save()
-        
         
         # Propagate the update to the data frame. (Copy on write principle)
         self.data.save_track(self.current_track_data, self.idx_obs)
@@ -908,19 +887,18 @@ class MainApp(tk.Tk):
         self.idx_obs = self.data.next(self.idx_obs)
         self.refresh()
         
-        
-    # # Filter Controls:
-    # def apply_filter(self, filter_parameters):
-    #     if self.data is None: return
-    #     # Attempts to set filter
-    #     if not self.data.set_filter(**filter_parameters):
-    #         messagebox.showerror(title = "Empty", message = "No tracks satisfy selected filters.")
-    #         return
-    #     else:
-    #         # Filter set successfully.
-    #         self.filter_parameters = filter_parameters
-    #         self.filter_num_obs = self.data.get_filtered_count()
-    #     self.refresh()
+    # Filter Controls:
+    def apply_filter(self, filter_parameters):
+        if self.data is None: return
+        # Attempts to set filter
+        if not self.data.set_filter(**filter_parameters):
+            messagebox.showerror(title = "Empty", message = "No tracks satisfy selected filters.")
+            return
+        else:
+            # Filter set successfully.
+            self.filter_parameters = filter_parameters
+            self.filter_num_obs = self.data.get_filtered_count()
+        self.refresh()
         
     def clear_filter(self):
         if self.data is None: return
@@ -930,8 +908,6 @@ class MainApp(tk.Tk):
         
     def quit_app(self):
         self.destroy()
-    
-    
     
     
 def launch():

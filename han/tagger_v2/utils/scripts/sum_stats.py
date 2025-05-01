@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+np.seterr(all = "raise")
+
 class SumStats:
     """
     Summary Statistics for Track Detections. 
@@ -11,25 +13,10 @@ class SumStats:
     def __init__(self):
         pass
         
-    def __call__(self, detections):
-        return self.compute_track_features(detections)
-    
-    def init_summary_dataframe(self, length : int):
-        """
-        Returns an empty summary statistic dataframe
-        """
-        return pd.DataFrame(columns = [
-            "duration","max_speed","min_speed","avg_speed","curviness","heading_mean",
-            "heading_std","turning_mean","turning_std","distance_total",
-            "distance_o","detections","p95_speed","p5_speed","med_speed",
-            "start_time", "end_time"], index = range(length))
-        
-        
-    def compute_all_summaries(self, detections:pd.DataFrame, track_ids = None):
+    def generate_summary_data(self, detections:pd.DataFrame, track_ids = None):
         if track_ids is not None:
-            summary_df = detections[detections["id_track"].isin(track_ids)]
+            detections = detections[detections["id_track"].isin(track_ids)]
         summary_df = detections.groupby("id_track").apply(self.compute_track_features)
-        summary_df = summary_df.sort_values(by = "id_track", ascending=True) # Sort by track id so it matches with the program implementation
         return summary_df
         
     # Additional Helper Mathematical Functions:
@@ -77,12 +64,15 @@ class SumStats:
         meanSin = np.mean(headingSin)
         # Compute the average heading and heading standard deviation
         avg_heading = np.arctan2(meanSin, meanCos) * 180 / np.pi
-        std_heading = np.sqrt(-np.log(meanCos*meanCos + meanSin*meanSin))
-        if std_heading == np.nan: std_heading = 0
+        try:
+            std_heading = np.sqrt(-2 * np.log(meanCos*meanCos + meanSin*meanSin))
+        except Exception:
+            std_heading = 0
+        # Std deviation calculation of heading changed.
         
         # Compute some deltas (length: n_detect - 1)
         delta_course = np.abs(course - course.shift(1))[1:]
-        delta_course = np.where(delta_course < 180, delta_course, delta_course - 180)
+        delta_course = np.where(delta_course < 180, delta_course, 360 - delta_course)
         
         # Compute pointwise distances
         
