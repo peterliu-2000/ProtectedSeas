@@ -62,5 +62,9 @@ TYPE_CODE = [
 TYPE_CODE_2_NAME = {c : n for (c, n) in zip(TYPE_CODE, TYPE_NAMES)}
 TYPE_NAME_2_CODE = {n : c for (c, n) in zip(TYPE_CODE, TYPE_NAMES)}
 
+PROGRAM_CACHE_PATH = "support/cache/"
+
+
+
 # Default Filter Parameters
-FILTER_DEFAULT = {'tag': None, 'type': None, 'has_notes': False, 'valid_only': False, 'confidence_low': 0.0, 'confidence_high': 1.0}
+FILTER_DEFAULT = {'tag': None, 'type': None, "pred" : None, 'confidence_low': 0.0, 'confidence_high': 1.0}

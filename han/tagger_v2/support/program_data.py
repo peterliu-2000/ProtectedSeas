@@ -11,8 +11,6 @@ from utils.constants import *
 from utils.scripts.sum_stats import SumStats
 
 
-# Summary generator
-sum_gen = SumStats()
 
 
 class ProgramData():
@@ -20,26 +18,71 @@ class ProgramData():
         
         # Import and initialize required data objects:
         self.tracks = read_and_init_track_df(track_filename)
+        print(f"Loaded track data @ {track_filename}")
         self.detections = read_and_init_detections_df(trajectory_filename)
+        print(f"loaded detections data @ {trajectory_filename}")
         
-        # Data size statistics
+        # Check if all tracks in the track dataframe has detections data
+        tracks_in_detections = set(self.detections["id_track"].unique())
+        self.tracks = self.tracks[self.tracks["id_track"].isin(tracks_in_detections)]
         self.num_tracks = len(self.tracks)
         self.num_filtered_tracks = self.num_tracks
         
-        # A boolean vector corresponding to filtered observations
-        # None -> No filter set.
-        self.filter = None
+        if self.num_tracks == 0:
+            raise RuntimeError(f"Provided Track file {track_filename} and Detections file {trajectory_filename} does not match.")
+        else:
+            print(f"Found {self.num_tracks} tracks with detections data.")
         
-        # Lazily initialize the summary statistics
-        self.summaries = sum_gen.init_summary_dataframe(self.num_tracks)
-        # Lazily initialize the prediction matrix for the model
-        # The untagged class is not included in the model.
-        self.predict_probs = -np.ones((self.num_tracks, len(ACT_CODE) - 1))
-        self.predict_label = [None] * self.num_tracks
+        # Assign a cache file for this track file
+        self.cache_name = track_filename.split("/")[-1].replace(".csv", ".cache")
+        self.cache_name = PROGRAM_CACHE_PATH + self.cache_name
+        self.summaries = self.init_summ_stats(set(self.tracks["id_track"]))
+        
+        # Sort both the summaries and the track dataframe so the order is consistent
+        self.summaries = self.summaries.sort_values(by = "id_track", ascending=True)
+        self.tracks = self.tracks.sort_values(by = "id_track", ascending=True)
         
         # Initialize the xgboost model:
-        self.model = load_model()
+        print(f"Initializing prediction models...")
+        self.model = load_model()      
+        self.preds = self.init_model_predictions()  
         
+        # Initialize filter
+        self.filter = None
+        
+        
+    def init_summ_stats(self, track_ids):
+        """
+        Initialize the summary statistics dataframe.
+        """
+        # Summary generator
+        sum_gen = SumStats()
+        # First try to read from file. 
+        try:
+            df = pd.read_parquet(self.cache_name)
+            # Do some checks with the loaded summary file:
+            if len(set(df["id_track"]) & set(track_ids)) != len(track_ids) or df.isnull().sum().sum() > 0:
+                raise RuntimeError()
+        except Exception:
+            print("Track Summary Cache doesn't exist or is corrupted.\n"
+                  "Calculating all summary statistics (This may take a while...)")
+            df = sum_gen.generate_summary_data(self.detections, track_ids)
+            df = df.reset_index()
+            # Save the generated summary statistics to file
+            df.to_parquet(self.cache_name)
+            print(f"Successfully cached track_summaries.")
+        
+        return df
+            
+    def init_model_predictions(self):
+        pred_label = model_predict(self.model, self.summaries)
+        pred_probs = model_predict(self.model, self.summaries, label=False)
+        self.tracks["predict_activity"] = pred_label
+        self.tracks["predict_score"] = np.max(pred_probs, axis = 1)
+        return pred_probs
+        
+            
+            
     def __len__(self):
         """
         Only returns the number of tracks present. Not the number of detection points
@@ -56,16 +99,7 @@ class ProgramData():
         return self.tracks.iloc[index]
     
     def get_summary(self, index):
-        # First try to obtain summary from cache
-        summ = self.summaries.iloc[index]
-        if summ.isnull().any():
-            # Need to compute new summary statistics:
-            id = self.tracks.iloc[index]["id_track"]
-            trajectory = get_trajectory(self.detections, id)
-            summ = sum_gen.compute_track_features(trajectory)
-            # Writes back to cache
-            self.summaries.iloc[index] = summ
-        return summ
+        return self.summaries.iloc[index]
     
     def get_model_prediction(self, index):
         """
@@ -77,27 +111,10 @@ class ProgramData():
         Returns:
             predicted label and predicted probabilities
         """
-        # First try to obtain predictions from cache:
-        pred_label, pred_probs = self.predict_label[index], self.predict_probs[index]
-        if pred_label is None:
-            # Need to compute
-            features = pd.DataFrame(self.get_summary(index), dtype = pd.Float64Dtype()).transpose()
-            pred_label = model_predict(self.model, features)
-            pred_probs = model_predict(self.model, features, label=False)
-            # Writes back to cache
-            self.predict_label[index] = pred_label
-            self.predict_probs[index, :] = pred_probs
+        pred_label = self.tracks.iloc[index]["predict_activity"]
+        pred_probs = self.preds[index, :] #type:ignore
         return pred_label, pred_probs
             
-    def fill_all_summaries(self):
-        """
-        Eagerly fill all summary statistics values.
-        """
-        self.summaries = sum_gen.compute_all_summaries(self.detections, self.tracks["id_track"])
-        # Also fills predictions
-        self.predict_label = np.array(model_predict(self.model, self.summaries))
-        self.predict_probs = np.array(model_predict(self.model, self.summaries, False))
-    
     def save_track(self, row:pd.Series, index):
         """
         Assumes pandas "copy on write" is enabled. Saves a row to track data.
@@ -165,63 +182,48 @@ class ProgramData():
             curr = (curr - 1) % self.num_tracks
         return idx
     
-    # def set_filter(self, tag = None, type = None,
-    #                has_notes = False, no_tags = False,
-    #                duplicate_tags = False, valid_only = False,
-    #                confidence_low = -np.inf, confidence_high = np.inf):
-    #     """
-    #     Filter the observations according to the following options:
+    def set_filter(self, tag = None, type = None, pred = None,
+                   confidence_low = -np.inf, confidence_high = np.inf):
+        """
+        Filter the observations according to the following options:
 
-    #     Args:
-    #         tag: The activity tag for the vessel. Defaults to None (All).
-    #         type: The type for the vessel. Defaults to None (All).
-    #         has_notes: Only show observations with a note. Defaults to False.
-    #         no_tags: Only show observations with at no activity tag. Defaults to False.
-    #         duplicate_tags: Only show observations with more than one activity tag checked. Defaults to False.
-    #         valid_only: Only show valid observations. Defaults to False.
-    #         confidence_low: Confidence Filter Low threshold. Defaults to -np.inf.
-    #         confidence_high: Confidence Filter High threshold. Defaults to np.inf.
+        Args:
+            tag: The activity tag for the vessel. Defaults to None (All).
+            type: The type for the vessel. Defaults to None (All).
+            pred: The activity tag predicted by the builtin model. Defaults to None (All)
+            confidence_low: Confidence Filter Low threshold. Defaults to -np.inf.
+            confidence_high: Confidence Filter High threshold. Defaults to np.inf.
             
-    #     Returns:
-    #         True if filter is set successfully, False otherwise.
-    #     """
-    #     # Initial data_filter
-    #     data_filter = [True] * self.num_tracks
-    #     # Filter according to activity tags
-    #     if tag is not None:
-    #         tag_filter = univariate_filter(self.tracks, "activity", lambda x: x == tag)
-    #         data_filter = np.logical_and(data_filter, tag_filter)
-    #     # Filter according to vessel type tags
-    #     if type is not None:
-    #         type_filter = univariate_filter(self.tracks, "type_m2_agg", lambda x: x == type)
-    #         data_filter = np.logical_and(data_filter, type_filter)
-    #     # Filter according to tags:
-    #     if duplicate_tags and no_tags:
-    #         return False # Two flags cannot be set simultaneously
-    #     if duplicate_tags:
-    #         data_filter = np.logical_and(filter_duplicate_tags(self.tracks), data_filter)
-    #     if no_tags:
-    #         data_filter = np.logical_and(filter_no_tags(self.tracks), data_filter)
-    #     # Filter according to other attributes:
-    #     if has_notes:
-    #         note_filter = univariate_filter(self.tracks, "notes", lambda x: not pd.isna(x) and len(x.strip()) > 0)
-    #         data_filter = np.logical_and(data_filter, note_filter)
-    #     if valid_only:
-    #         valid_filter = univariate_filter(self.tracks, "valid", lambda x: x)
-    #         data_filter = np.logical_and(data_filter, valid_filter)
-    #     # Filter according to confidence
-    #     conf_filter = univariate_filter(self.tracks, "confidence",
-    #                                     lambda x: x >= confidence_low and x < confidence_high)
-    #     data_filter = np.logical_and(data_filter, conf_filter)
+        Returns:
+            True if filter is set successfully, False otherwise.
+        """
+        # Initial data_filter
+        data_filter = [True] * self.num_tracks
+        # Filter according to activity tags
+        if tag is not None:
+            tag_filter = univariate_filter(self.tracks, "activity", lambda x: x == tag)
+            data_filter = np.logical_and(data_filter, tag_filter)
+        # Filter according to vessel type tags
+        if type is not None:
+            type_filter = univariate_filter(self.tracks, "type_m2_agg", lambda x: x == type)
+            data_filter = np.logical_and(data_filter, type_filter)
+        # Filter according to model prediction:
+        if pred is not None:
+            model_filter = univariate_filter(self.tracks, "predict_activity", lambda x: x == pred)
+            data_filter = np.logical_and(data_filter, model_filter)
+        # Filter according to confidence
+        conf_filter = univariate_filter(self.tracks, "predict_score",
+                                        lambda x: x >= confidence_low and x < confidence_high)
+        data_filter = np.logical_and(data_filter, conf_filter)
         
-    #     # determine if the filter is valid:
-    #     filtered_obs = np.sum(data_filter)
-    #     if filtered_obs > 0:
-    #         self.filter = data_filter
-    #         self.num_filtered_tracks = filtered_obs
-    #         return True
-    #     else:
-    #         return False # No observations match.
+        # determine if the filter is valid:
+        filtered_obs = np.sum(data_filter)
+        if filtered_obs > 0:
+            self.filter = data_filter
+            self.num_filtered_tracks = filtered_obs
+            return True
+        else:
+            return False # No observations match.
             
     def unset_filter(self):
         """

@@ -52,10 +52,13 @@ def read_and_init_track_df(filename):
     if "valid" not in columns:
         df["valid"] = np.ones(df_length)
         
-    # Sort the data frame by id_track and only return relevant columns
-    df = df.sort_values(by = "id_track", ascending=True)
-    # [["id_track", "activity", "type_m2_agg", "valid"]]
-    return df
+    # Add the columns for model prediction results
+    df["predict_activity"] = [pd.NA] * df_length
+    df["predict_score"] = [0] * df_length    
+    
+        
+    # Only return relevant columns
+    return df[["id_track", "activity", "type_m2_agg", "valid", "predict_activity", "predict_score"]]
 
 def read_and_init_detections_df(filename, save = True):
     """
