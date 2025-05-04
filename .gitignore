@@ -67,3 +67,6 @@ mlruns/
 
 #paper
 papers/
+
+#
+*.docx
