@@ -2,6 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+"""
+Usage:
+    track_plot = TrackPlot(radar_detections, labels: optional)
+    track_plot.plot_trajectory(mode, type, num_samples)
+"""
+
 class TrackPlot:
 
     def __init__(self, radar_detections, labels):
@@ -10,12 +16,13 @@ class TrackPlot:
 
     def plot_trajectory(self, mode, type, num_samples = 5):
         """
-        Args: 
-            type: vessel type of interest
-            num_samples: number of random trajectories to be plotted
-            merged_radar_detections: default is to use merged_radar_detections
-
         Plot trajectories of vessel of type based on radar detections
+
+        Args: 
+            mode: 'type' or 'activity'
+            type: vessel type or activity of interest
+            num_samples: number of random trajectories to be plotted
+
         """
         assert mode in ['type', 'activity'], "mode must be either 'type' or 'activity'"
         if mode == 'type':
