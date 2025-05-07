@@ -18,6 +18,20 @@ class SumStats2:
     Inputs: preprocessed radar detections
     Returns: summary df: each row is an id_track with summary statistics
     """
+    # Class attribute to store feature names
+    FEATURE_NAMES = [
+        "max_speed",
+        "min_speed",
+        "avg_speed",
+        "curviness",
+        "heading_mean",
+        "heading_std",
+        "turning_mean",
+        "turning_std",
+        "distance_total",
+        "distance_o"
+    ]
+
     def __init__(self, preprocessed_radar_detections):
         self.df = preprocessed_radar_detections
         
@@ -75,6 +89,7 @@ class SumStats2:
         track_summary = {
             "duration"       : group["datetime"].iloc[-1] - group["datetime"].iloc[0],
             "detections"     : n_detect,
+            "distance_total" : np.sum(group['distance_diff']),
             "max_speed"      : group["speed"].max(),
             "min_speed"      : group["speed"].min(),
             "avg_speed"      : group["speed"].mean(),
@@ -83,7 +98,6 @@ class SumStats2:
             "heading_std"    : self._circular_std(group['course']),
             "turning_mean"   : self._circular_mean(turning),
             "turning_std"    : self._circular_std(turning),
-            "distance_total" : np.sum(group['distance_diff']),
             "distance_o"     : distance_o,
             'f1'             : f1,
             'f2'             : f2,
@@ -171,13 +185,26 @@ class SumStats2:
         return f1, f2, f3, f4
     
 
-
 class SumStatsBaseline:
     """
     Summary Statistics for Track Detections, revised implementation from ProtectedSeas
     Inputs: preprocessed radar detections, preferably with type/activity columns
     Returns: summary df: each row is an id_track with summary statistics
     """
+
+    FEATURE_NAMES = [
+        "max_speed",
+        "min_speed",
+        "avg_speed",
+        "curviness",
+        "heading_mean",
+        "heading_std",
+        "turning_mean",
+        "turning_std",
+        "distance_total",
+        "distance_o"
+    ]
+
     def __init__(self, preprocessed_radar_detections):
         self.df = preprocessed_radar_detections
         
@@ -226,6 +253,8 @@ class SumStatsBaseline:
         # Speed is in kts, Distance is in km, Heading / Turning in Deg
         track_summary = {
             "duration"       : group["datetime"].iloc[-1] - group["datetime"].iloc[0],
+            "distance_o"     : distance_o,
+            "detections"     : n_detect,
             "max_speed"      : group["speed"].max(),
             "min_speed"      : group["speed"].min(),
             "avg_speed"      : group["speed"].mean(),
@@ -235,14 +264,9 @@ class SumStatsBaseline:
             "turning_mean"   : np.mean(turning),
             "turning_std"    : np.std(turning),
             "distance_total" : np.sum(group['distance_diff']),
-            "distance_o"     : distance_o,
-            "detections"     : n_detect
+
         }
 
-        if 'type_m2' in group.columns:
-            track_summary['type_m2'] = group['type_m2'].iloc[0]
-        if 'activity' in group.columns:
-            track_summary['activity'] = group['activity'].iloc[0]
         return pd.Series(track_summary)
     
     @staticmethod
@@ -296,6 +320,4 @@ class SumStatsBaseline:
         a = np.sin(delta_phi / 2) ** 2 + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(delta_lambda / 2) ** 2
         c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
         return r * c
-    
-    
-   
+

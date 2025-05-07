@@ -1,9 +1,9 @@
 {
     "model_name": "XGBoost Vessel Activity Classifier",
     "features": [
-        "p95_speed",
-        "p5_speed",
-        "med_speed",
+        "max_speed",
+        "min_speed",
+        "avg_speed",
         "curviness",
         "heading_mean",
         "heading_std",
@@ -17,8 +17,8 @@
         "max_depth": 13,
         "n_estimators": 350
     },
-    "cv_accuracy": 0.9098943045031516,
-    "test_accuracy": 0.9299610894941635,
+    "cv_accuracy": 0.9103816339378493,
+    "test_accuracy": 0.9066147859922179,
     "label_mapping": {
         "0": "fishing",
         "1": "drifting",
