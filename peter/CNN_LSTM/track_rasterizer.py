@@ -8,7 +8,8 @@ from PIL import Image
 Directly Run this file to rasterize the vessel trajectories
 """
 
-MIN_PIXEL_SPAN = 2.5e-5 # Adds a minimum pixel span
+# prevent image from being zoomed in too mcuh
+MIN_PIXEL_SPAN = 2.5e-5 
 
 class TrajectoryRasterize():
     def __init__(self, image_width, image_height):
@@ -27,12 +28,10 @@ class TrajectoryRasterize():
         """
         img_aspect_ratio = self.width / self.height
         
-        # First compute the span of the latitude and longitudes
         lat_max, lat_min = np.max(lats), np.min(lats)
         long_max, long_min = np.max(longs), np.min(longs)
         lat_span, long_span = lat_max - lat_min, long_max - long_min
         
-        # Add a minimum span to prevent the image from being zoomed in too far
         if min_lat_span is None:
             min_lat_span = self.height * MIN_PIXEL_SPAN
         if min_long_span is None:
@@ -68,7 +67,7 @@ class TrajectoryRasterize():
         # We require the row / column indices to be of int type
         row_idxs = np.minimum(np.floor(lat_std * self.height), self.height - 1).astype(np.int64)
         col_idxs = np.minimum(np.floor(long_std * self.width), self.width - 1).astype(np.int64)
-        return np.vstack((row_idxs, col_idxs)).T
+        return np.vstack((row_idxs, col_idxs)).T # -> N, 2
         
     def aggregate_pixels(self, speed, turning, indices):
         """
@@ -142,10 +141,8 @@ class VesselTrajectoryRasterize(TrajectoryRasterize):
         if n == 0: raise RuntimeError(f"Track id {track_id} has empty record")
         
         # Compute the turning vector, the turning at the initial point is always
-        # set to 0
         turning = np.nan_to_num(np.abs(detections["course"] - detections["course"].shift(1)), nan = 0.0)
-        turning = np.where(turning < 180, turning, turning - 180)
-        # Always bound the turning between 0 and 180.
+        turning = np.where(turning < 180, turning, 360 - turning)
         
         # We only need to keep track of these:
         return {
@@ -166,7 +163,7 @@ class VesselTrajectoryRasterize(TrajectoryRasterize):
         """
         data = self.get_track(track_id)
         lat, long = self.standardize_coordinates(data["lats"], data["longs"])
-        pixel_idx = self.assign_pixel_position(lat, long)
+        pixel_idx = self.assign_pixel_position(lat, long) #N,2
         agg_np = self.aggregate_pixels(data["speed"], data["turning"], pixel_idx)
         return self.to_image(agg_np, speed_ceil, bias)
 
