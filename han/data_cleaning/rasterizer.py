@@ -3,15 +3,14 @@
 
 # In[1]:
 
-
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
 
 # In[2]:
 
-
+RES_H = 160
+RES_W = 160
 
 # In[23]:
 
@@ -152,7 +151,7 @@ class VesselTrajectoryRasterize(TrajectoryRasterize):
         # Compute the turning vector, the turning at the initial point is always
         # set to 0
         turning = np.nan_to_num(np.abs(detections["course"] - detections["course"].shift(1)), nan = 0.0)
-        turning = np.where(turning < 180, turning, turning - 180)
+        turning = np.where(turning < 180, turning, 360 - turning)
         # Always bound the turning between 0 and 180.
         
         # We only need to keep track of these:
@@ -191,11 +190,10 @@ if __name__ == "__main__":
 
 
     from PIL import Image
-    rasterizer = VesselTrajectoryRasterize(224, 224, detections)
+    rasterizer = VesselTrajectoryRasterize(RES_H, RES_W, detections)
     idx = np.random.choice(len(tracks))
-    # id = tracks.iloc[idx]["id_track"]
-    # print(tracks.iloc[idx]["activity"])
-    id = 36683082 
+    id = tracks.iloc[idx]["id_track"]
+    print(tracks.iloc[idx]["activity"])
     result = rasterizer(id)
     print(np.max(result[:,:,0]),np.max( result[:,:,1]), np.max(result[:,:,2]))
 
