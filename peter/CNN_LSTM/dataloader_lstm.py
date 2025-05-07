@@ -12,12 +12,6 @@ from core.vessel_agg import VesselTypeAggregator
 from core.DICT import TYPE_to_LABEL
 import json
 
-"""
-
-
-
-"""
-
 def setup_project_root():
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     sys.path.append(project_root)

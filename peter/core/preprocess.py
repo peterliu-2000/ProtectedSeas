@@ -15,7 +15,7 @@ def preprocess_data(ais_track_path, radar_detection_path, print_mode = False):
     Main preprocess pipeline on radar_detections:
         1. One-to-one matching between ais_tracks and radar_detections (results match with Songyu's)
         2. Remove tracks with less than 50 detections counts
-        3. Remove disrupted tracks if max instant speed >= 150 knots
+        3. Remove tracks with max instant speed >= 150 knots
 
     Inputs: original ais_track and radar_detection data path
     Returns: preprocessed radar_detections

@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from peter.core.DICT import ACT_to_LABEL, TYPE_to_LABEL
+from core.DICT import ACT_to_LABEL, TYPE_to_LABEL, TYPES_TO_AGG
 
 # Random Seed
 SEED = 1
@@ -44,33 +44,38 @@ class VesselActivityDataset(Dataset):
         y = ACT_to_LABEL[act]
         return img, y
     
+import os
+import pandas as pd
+from torch.utils.data import Dataset
+from PIL import Image
+from torchvision import transforms
+
 class VesselTypeDataset(Dataset):
-    def __init__(self, label_directory, image_directory, transform = None) -> None:
-        self.labels = pd.read_csv(label_directory)
+    def __init__(self, label_directory, image_directory, transform=None) -> None:
         self.image_path = image_directory
-        self.transform = transform if transform is not None else \
-            transforms.Compose([
-                transforms.Resize((IMAGE_HEIGHT, IMAGE_HEIGHT)), # Resize to ResNet compliant size
-                transforms.ToTensor() 
-            ])
-        
+        self.transform = transform if transform is not None else transforms.Compose([
+            transforms.Resize((IMAGE_HEIGHT, IMAGE_HEIGHT)),  # Resize to ResNet-compliant size
+            transforms.ToTensor()
+        ])
+        self.labels = pd.read_csv(label_directory)
+ 
+
     def __len__(self):
         return len(self.labels)
-    
+
     def __getitem__(self, idx):
-        # Read the corresponding row from the label dataset
         record = self.labels.iloc[idx]
-        id, vessel_type = record["id_track"], record["type_m2_agg"]
-        
+        id, vessel_type = record["id_track"], record["type_m2"]
+
         img_name = str(id) + IMAGE_FILETYPE
         img = Image.open(os.path.join(self.image_path, img_name))
-        
+
         if self.transform:
             img = self.transform(img)
-            
-        # Convert the activity code to label
-        y = TYPE_to_LABEL[vessel_type]
+
+        y = TYPE_to_LABEL[TYPES_TO_AGG[vessel_type]]
         return img, y
+
 
 def collate_fn(batch):
     images, targets = zip(*batch)  # Unzip images and targets
@@ -101,10 +106,10 @@ def data_split(dataset, batch_size, val_prob=0.1, test_prob=0.1, num_workers=1):
     return get_loader(train_sampler), get_loader(val_sampler), get_loader(test_sampler)
 
     
-def get_activity_datasets(label_directory, image_directory, batch_size, val_prob = 0.2):
+def get_activity_datasets(label_directory, image_directory, batch_size):
     dataset = VesselActivityDataset(label_directory, image_directory)
-    return data_split(dataset, batch_size, val_prob)
+    return data_split(dataset, batch_size)
 
-def get_type_datasets(label_directory, image_directory, batch_size, val_prob = 0.2):
+def get_type_datasets(label_directory, image_directory, batch_size):
     dataset = VesselTypeDataset(label_directory, image_directory)
-    return data_split(dataset, batch_size, val_prob)
+    return data_split(dataset, batch_size)
