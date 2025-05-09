@@ -9,8 +9,8 @@ import numpy as np
 
 # In[2]:
 
-RES_H = 160
-RES_W = 160
+RES_H = 224
+RES_W = 224
 
 # In[23]:
 
@@ -192,8 +192,10 @@ if __name__ == "__main__":
     from PIL import Image
     rasterizer = VesselTrajectoryRasterize(RES_H, RES_W, detections)
     idx = np.random.choice(len(tracks))
-    id = tracks.iloc[idx]["id_track"]
-    print(tracks.iloc[idx]["activity"])
+    # id = tracks.iloc[idx]["id_track"]
+
+    # print(tracks.iloc[idx]["activity"])
+    id = 40308593
     result = rasterizer(id)
     print(np.max(result[:,:,0]),np.max( result[:,:,1]), np.max(result[:,:,2]))
 

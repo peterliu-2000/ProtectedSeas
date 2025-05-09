@@ -21,8 +21,11 @@ pd.options.mode.copy_on_write = True
 
 
 # Default Paths for quick loading
-default_track = "../../data/type_label.csv"
-default_detections = "../../data/detections_radar_smoothed.csv"
+# default_track = "../../data/type_label.csv"
+# default_detections = "../../data/detections_radar_smoothed.csv"
+
+default_track = "../../data/tracks_tagged_v6.csv"
+default_detections = "../../data/detections_tagged_smoothed.csv"
 
 #########################
 ###### GUI Helpers ######
