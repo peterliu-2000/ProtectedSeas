@@ -1,1 +1,0 @@
-{"feature_cols": ["speed", "course", "longitude", "latitude"], "summary_cols": ["max_speed", "min_speed", "avg_speed", "curviness", "heading_mean", "heading_std", "turning_mean", "turning_std", "distance_total", "distance_o"]}

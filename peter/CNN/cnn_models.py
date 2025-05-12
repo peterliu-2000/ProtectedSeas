@@ -2,9 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class CNNBaseline(nn.Module):
-    def __init__(self,  num_hidden_1, num_hidden_2, num_hidden_3, num_classes):
+    def __init__(self, in_channels, num_hidden_1, num_hidden_2, num_hidden_3, num_classes):
         super(CNNBaseline, self).__init__()
+        self.in_channels = in_channels
         self.num_hidden_1 = num_hidden_1
         self.num_hidden_2 = num_hidden_2
         self.num_hidden_3 = num_hidden_3
@@ -12,8 +17,8 @@ class CNNBaseline(nn.Module):
         
         self.features = nn.Sequential(
             # Conv Block 1
-            # Input: 3*224*224
-            nn.Conv2d(in_channels=3, out_channels=self.num_hidden_1, kernel_size=3, padding=1),  # -> (h1, 224, 224)
+            # Input: INPUT_CHANNELS*224*224
+            nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_hidden_1, kernel_size=3, padding=1),  # -> (h1, 224, 224)
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2),  # -> (h1, 112, 112)
             nn.Dropout(p=0.25),
@@ -43,4 +48,6 @@ class CNNBaseline(nn.Module):
         x = self.features(x)
         x = self.classifier(x)
         return x
+
+
 
