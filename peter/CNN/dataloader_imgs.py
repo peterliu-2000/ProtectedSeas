@@ -76,7 +76,6 @@ class VesselTypeDataset(Dataset):
         y = TYPE_to_LABEL[TYPES_TO_AGG[vessel_type]]
         return img, y
 
-
 def collate_fn(batch):
     images, targets = zip(*batch)  # Unzip images and targets
     images = torch.stack(images, dim=0)  # Stack images into a batch

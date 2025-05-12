@@ -58,8 +58,9 @@ mlartifacts/
 mlruns/
 .Rproj.user
 
-#models
+#models, track matrix
 *.pth
+*.pt
 
 # Images
 *.jpg
