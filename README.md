@@ -1,8 +1,15 @@
 ## May 8, W6
 
+More on CNN architecture exploration:
+* Tried using more than 3 input channels for track preprocess: counts, mean speed, mean turning, std speed, std turning. 
+* Performance degraded severely (~40% accuracy) as model collapses towards predicting the most common class
 
+(double check: AIS labelled 'class b' can be a fishing vessl)
 
-
+Next Steps:
+* Rerun previous models on non-transit tracks predicted by activity-xgboos-model
+* Image augmentation for CNN training: rotation & horizontal/vertical flip
+* CNN + LSTM architecture? (probably need more data on this front)
 
 ## April 22, W4
 
