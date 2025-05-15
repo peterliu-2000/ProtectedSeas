@@ -28,7 +28,7 @@ TYPE2NUM = {v: k for k, v in NUM2TYPE.items()}
 N_TYPE = len(TYPES)
 
 #AIS Type Aggregation
-TYPES_TO_AGG = {
+TYPES2AGG = {
             'tanker_ship': 'cargo/tanker',
             'cargo_ship': 'cargo/tanker',
             'tug': 'tug/tow',
