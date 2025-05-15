@@ -7,7 +7,9 @@ More on CNN architecture exploration:
 (double check: AIS labelled 'class b' can be a fishing vessl)
 
 Next Steps:
-* Rerun previous models on non-transit tracks predicted by activity-xgboos-model
+* **Main**: Rerun previous models on non-transit tracks predicted by activity-xgboost-model, see if anything new comes up
+* Check XGBoost confidence score: maybe filter out transit tracks with very high confidence score
+* External AIS data source?
 * Image augmentation for CNN training: rotation & horizontal/vertical flip
 * CNN + LSTM architecture? (probably need more data on this front)
 

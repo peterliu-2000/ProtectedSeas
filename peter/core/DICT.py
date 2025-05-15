@@ -1,13 +1,33 @@
+#Activity Labels
 ACTIVITIES = ["stopped", "transit", "drifting", "lobster", "hook", "seine", "trawl", "fishing"]
-ACT_to_LABEL = {k:v for k,v in zip(ACTIVITIES, range(len(ACTIVITIES)))}
+NUM2ACTIVITY = {
+        0: "drifting",
+        1: "transit",
+        2: "hook",
+        3: "lobster",
+        4: "stopped",
+        5: "seine",
+        6: "trawl"
+}
+ACITIVTY2NUM = {v: k for k, v in NUM2ACTIVITY.items()}
 N_ACT = len(ACTIVITIES)
 
-
+#Type Labels
 TYPES = ["class_b", "cargo/tanker", "passenger_ship", "tug/tow", 
          "military_ship", "fishing_boat", "other"]
-TYPE_to_LABEL = {k:v for k,v in zip(TYPES, range(len(TYPES)))}
+NUM2TYPE = {
+    0: "class_b",
+    1: "cargo/tanker",
+    2: "passenger_ship",
+    3: "tug/tow",
+    4: "military_ship",
+    5: "fishing_boat",
+    6: "other"
+}
+TYPE2NUM = {v: k for k, v in NUM2TYPE.items()}
 N_TYPE = len(TYPES)
 
+#AIS Type Aggregation
 TYPES_TO_AGG = {
             'tanker_ship': 'cargo/tanker',
             'cargo_ship': 'cargo/tanker',

@@ -2,13 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-"""
-Usage:
-    track_plot = TrackPlot(radar_detections, labels: optional)
-    track_plot.plot_trajectory(mode, type, num_samples)
-"""
 
 class TrackPlot:
+
+    """
+    Usage:
+        track_plot = TrackPlot(radar_detections, labels)
+        track_plot.plot_trajectory(mode, type, num_samples)
+    """
 
     def __init__(self, radar_detections, labels):
         self.radar_detections = radar_detections
@@ -19,18 +20,23 @@ class TrackPlot:
         Plot trajectories of vessel of type based on radar detections
 
         Args: 
-            mode: 'type' or 'activity'
+            mode: 'type', 'activity' or 'activity_inferred'
             type: vessel type or activity of interest
             num_samples: number of random trajectories to be plotted
 
         """
         assert mode in ['type', 'activity'], "mode must be either 'type' or 'activity'"
+
         if mode == 'type':
             ids = self.labels[self.labels['type_m2'] == type]['id_track'].unique()
             df = self.radar_detections[self.radar_detections['id_track'].isin(ids)]
 
         elif mode == 'activity':
             ids = self.labels[self.labels['activity'] == type]['id_track'].unique()
+            df = self.radar_detections[self.radar_detections['id_track'].isin(ids)]
+        
+        elif mode == 'activity_inferred':
+            ids = self.labels[self.labels['activity_inferred'] == type]['id_track'].unique()
             df = self.radar_detections[self.radar_detections['id_track'].isin(ids)]
 
         df['datetime'] = pd.to_datetime(df['datetime'])
