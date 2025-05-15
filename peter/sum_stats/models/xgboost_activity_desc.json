@@ -1,0 +1,23 @@
+{
+    "model_name": "xgboost_activity",
+    "features": [
+        "max_speed",
+        "min_speed",
+        "avg_speed",
+        "curviness",
+        "heading_mean",
+        "heading_std",
+        "turning_mean",
+        "turning_std",
+        "distance_total",
+        "distance_o"
+    ],
+    "params": {
+        "learning_rate": 0.1,
+        "max_depth": 13,
+        "n_estimators": 350
+    },
+    "cv_accuracy": 0.9222858824608611,
+    "test_accuracy": 0.927734375,
+    "notes": "trained on manually labelled tagged tracks (v6). 80:20 stratified split. 4-fold CV."
+}
