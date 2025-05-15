@@ -196,12 +196,11 @@ class SumStatsBaseline:
         "max_speed",
         "min_speed",
         "avg_speed",
-        "curviness",
         "heading_mean",
         "heading_std",
         "turning_mean",
         "turning_std",
-        "distance_total",
+        "curviness",
         "distance_o"
     ]
 
@@ -253,18 +252,17 @@ class SumStatsBaseline:
         # Speed is in kts, Distance is in km, Heading / Turning in Deg
         track_summary = {
             "duration"       : group["datetime"].iloc[-1] - group["datetime"].iloc[0],
-            "distance_o"     : distance_o,
+            "distance_total" : np.sum(group['distance_diff']),
             "detections"     : n_detect,
             "max_speed"      : group["speed"].max(),
             "min_speed"      : group["speed"].min(),
             "avg_speed"      : group["speed"].mean(),
-            "curviness"      : curviness,
             "heading_mean"   : avg_heading,
             "heading_std"    : std_heading,
             "turning_mean"   : np.mean(turning),
             "turning_std"    : np.std(turning),
-            "distance_total" : np.sum(group['distance_diff']),
-
+            "distance_o"     : distance_o,
+            "curviness"      : curviness
         }
 
         return pd.Series(track_summary)
