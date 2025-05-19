@@ -152,16 +152,41 @@ def extract_type_label(ais_track_path):
     return type_df
 
 
+# Uncomment to preprocess radar detections
+# if __name__ == '__main__':
+#     print(' ---- Preprocessing radar detections ----')
+#     ais_track_path = '../../data/tracks_ais.csv'
+#     radar_detection_path = '../../data/detections_radar.csv'
+#     processed_radar_data = preprocess_data(ais_track_path, radar_detection_path, print_mode=True)
+#     save_path = '../../data/cleaned_data/preprocessed_radar_detections.csv'
+#     processed_radar_data.to_csv(save_path, index=False)
 
-if __name__ == '__main__':
-    ais_track_path = '../../data/tracks_ais.csv'
-    radar_detection_path = '../../data/detections_radar.csv'
-    processed_radar_data = preprocess_data(ais_track_path, radar_detection_path, print_mode=True)
-    save_path = '../../data/cleaned_data/preprocessed_radar_detections.csv'
-    processed_radar_data.to_csv(save_path, index=False)
+#     ais_label_path = '../../data/ais_type_labels.csv'
+#     ais_labels = extract_type_label(ais_track_path)
+#     ais_labels.to_csv(ais_label_path, index=False)
 
-    ais_label_path = '../../data/ais_type_labels.csv'
-    ais_labels = extract_type_label(ais_track_path)
-    ais_labels.to_csv(ais_label_path, index=False)
+if __name__ == "__main__":
+    print(' ---- Preprocessing tagged detections ----')
+    tagged_detections = pd.read_csv('../../data/raw_data/detections_tagged.csv')
+
+    tagged_detections['datetime'] = pd.to_datetime(tagged_detections['datetime'])
+    
+    counts = tagged_detections.groupby('id_track').count()['id_detect'].rename('detection_count').reset_index()
+    valid_ids = counts[counts['detection_count'] >= 50]['id_track']
+    valid_detections = tagged_detections[tagged_detections['id_track'].isin(valid_ids)]
+    print(' ---- Remove tracks with less than 50 detections counts ----')
+
+    non_disrupted_detections = DisruptionFilter(valid_detections)()
+    print(f' ---- Remove disrupted tracks ----')
+
+    non_disrupted_detections.drop(columns=['latitude_prev', 'longitude_prev', 'time_prev', 'distance_diff', 'time_diff', 'instant_speed','disrupted'], inplace=True)
+
+    save_path = '../../data/cleaned_data/preprocessed_tagged_detections.csv'
+    non_disrupted_detections.to_csv(save_path, index=False)
+
+    print(f"Original tagged detections tracks: {tagged_detections['id_track'].nunique()}")
+    print(f"After preprocessing: {non_disrupted_detections['id_track'].nunique()}")
+
+
 
 

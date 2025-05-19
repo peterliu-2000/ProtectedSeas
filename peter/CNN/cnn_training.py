@@ -5,7 +5,7 @@ import torch
 import copy
 from tqdm import tqdm
 
-def train(model: nn.Module, 
+def train_model(model: nn.Module, 
                 train_loader: DataLoader, 
                 val_loader: DataLoader, 
                 optimizer: optim.Optimizer, 
@@ -88,3 +88,21 @@ def train(model: nn.Module,
 
     return TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_model_wts, best_val_loss
 
+def save_model(TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_val_loss, best_model_wts, model_name):
+    """
+    Save best model weights and model specs in models/ folder
+    """
+
+    torch.save(best_model_wts, f"models/{model_name}.pth")
+
+    model_specs = {
+        "model_name": model_name,
+        "train_loss": TRAIN_LOSSES,
+        "train_acc": TRAIN_ACC,
+        "val_loss": VAL_LOSSES,
+        "val_acc": VAL_ACC,
+        "best_model_wts": best_model_wts,
+        "best_val_loss": best_val_loss,
+    }
+
+    torch.save(model_specs, f"models/{model_name}_specs.json")

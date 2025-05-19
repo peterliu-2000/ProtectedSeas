@@ -166,16 +166,42 @@ class VesselTrajectoryRasterize(TrajectoryRasterize):
         pixel_idx = self.assign_pixel_position(lat, long) #N,2
         agg_np = self.aggregate_pixels(data["speed"], data["turning"], pixel_idx)
         return self.to_image(agg_np, speed_ceil, bias)
-
-if __name__ == "__main__":
-    radar_detections_path = '../../data/cleaned_data/preprocessed_radar_detections.csv'
-    radar_detections = pd.read_csv(radar_detections_path)
     
-    rasterizer = VesselTrajectoryRasterize(image_width=224, image_height=224, trajectory_data=radar_detections)
+#Rasterize full non-transit tracks
+if __name__ == "__main__":
+    radar_detections = pd.read_csv('../../data/cleaned_data/preprocessed_radar_detections.csv')
+    tagged_detections = pd.read_csv('../../data/cleaned_data/preprocessed_tagged_detections.csv')
+    labels = pd.read_csv('../../data/labels/full_non_transit_radar_labels.csv')
+    print(len(labels['id_track'].unique()))
 
-    save_path = '../track_images/'
-    track_ids = list(radar_detections["id_track"].unique())
+    full_detections = pd.concat([radar_detections, tagged_detections])
+    nontransit_detections = full_detections[full_detections["id_track"].isin(labels["id_track"])]
 
-    for id in tqdm(track_ids):
-        img = Image.fromarray(rasterizer(id))
-        img.save(save_path + f"{id}.jpg", quality=95)
+    print(full_detections.columns)
+    print(full_detections['id_track'].nunique())
+    print(nontransit_detections['id_track'].nunique())
+
+    rasterizer = VesselTrajectoryRasterize(image_width=224, image_height=224, trajectory_data=nontransit_detections)
+    save_path = 'nontransit_track_images/'
+    track_ids = list(nontransit_detections["id_track"].unique())
+
+
+
+    # for id in tqdm(track_ids):
+    #     img = Image.fromarray(rasterizer(id))
+    #     img.save(save_path + f"{id}.jpg", quality=95)
+
+
+# Uncomment to rasterize radar detections
+# if __name__ == "__main__":
+#     radar_detections_path = '../../data/cleaned_data/preprocessed_radar_detections.csv'
+#     radar_detections = pd.read_csv(radar_detections_path)
+    
+#     rasterizer = VesselTrajectoryRasterize(image_width=224, image_height=224, trajectory_data=radar_detections)
+
+#     save_path = '/track_images/'
+#     track_ids = list(radar_detections["id_track"].unique())
+
+#     for id in tqdm(track_ids):
+#         img = Image.fromarray(rasterizer(id))
+#         img.save(save_path + f"{id}.jpg", quality=95)

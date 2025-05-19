@@ -6,7 +6,9 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from core.DICT import ACT_to_LABEL, TYPE_to_LABEL, TYPES_TO_AGG
+import sys
+
+from core.DICT import  *
 
 # Random Seed
 SEED = 1
@@ -41,7 +43,7 @@ class VesselActivityDataset(Dataset):
             img = self.transform(img)
             
         # Convert the activity code to label
-        y = ACT_to_LABEL[act]
+        y = ACITIVTY2NUM[act]
         return img, y
     
 import os
@@ -58,14 +60,20 @@ class VesselTypeDataset(Dataset):
             transforms.ToTensor()
         ])
         self.labels = pd.read_csv(label_directory)
- 
+
+        #drop tracks with no vessel type
+        self.labels = self.labels.dropna(subset=["type_m2_agg"]) 
+        # Filter out rows with missing image files
+        self.labels = self.labels[self.labels["id_track"].apply(
+            lambda id: os.path.isfile(os.path.join(self.image_path, str(id) + IMAGE_FILETYPE))
+        )].reset_index(drop=True)
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
         record = self.labels.iloc[idx]
-        id, vessel_type = record["id_track"], record["type_m2"]
+        id, vessel_type = record["id_track"], record["type_m2_agg"]
 
         img_name = str(id) + IMAGE_FILETYPE
         img = Image.open(os.path.join(self.image_path, img_name))
@@ -73,7 +81,7 @@ class VesselTypeDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        y = TYPE_to_LABEL[TYPES_TO_AGG[vessel_type]]
+        y = TYPE2NUM[vessel_type]
         return img, y
 
 def collate_fn(batch):

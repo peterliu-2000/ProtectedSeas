@@ -25,7 +25,7 @@ class TrackPlot:
             num_samples: number of random trajectories to be plotted
 
         """
-        assert mode in ['type', 'activity', 'activity_inferred', 'type_agg']
+        assert mode in ['type', 'activity', 'activity_inferred', 'type_m2_agg']
 
         if mode == 'type':
             ids = self.labels[self.labels['type_m2'] == type]['id_track'].unique()
@@ -39,8 +39,8 @@ class TrackPlot:
             ids = self.labels[self.labels['activity_inferred'] == type]['id_track'].unique()
             df = self.radar_detections[self.radar_detections['id_track'].isin(ids)]
 
-        elif mode == 'type_agg':
-            ids = self.labels[self.labels['type_agg'] == type]['id_track'].unique()
+        elif mode == 'type_m2_agg':
+            ids = self.labels[self.labels['type_m2_agg'] == type]['id_track'].unique()
             df = self.radar_detections[self.radar_detections['id_track'].isin(ids)]
 
         df['datetime'] = pd.to_datetime(df['datetime'])
