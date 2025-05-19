@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch   
 import copy
 from tqdm import tqdm
+import json
 
 def train_model(model: nn.Module, 
                 train_loader: DataLoader, 
@@ -92,7 +93,7 @@ def save_model(TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_val_loss, best
     """
     Save best model weights and model specs in models/ folder
     """
-
+    #save best model weights
     torch.save(best_model_wts, f"models/{model_name}.pth")
 
     model_specs = {
@@ -101,8 +102,9 @@ def save_model(TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_val_loss, best
         "train_acc": TRAIN_ACC,
         "val_loss": VAL_LOSSES,
         "val_acc": VAL_ACC,
-        "best_model_wts": best_model_wts,
         "best_val_loss": best_val_loss,
     }
 
-    torch.save(model_specs, f"models/{model_name}_specs.json")
+    #save model specs
+    with open(f"models/{model_name}_specs.json", "w") as f:
+        json.dump(model_specs, f, indent=4)
