@@ -71,3 +71,6 @@ papers/
 
 #
 *.docx
+
+#untrack all json files in peter
+peter/**/*.json
