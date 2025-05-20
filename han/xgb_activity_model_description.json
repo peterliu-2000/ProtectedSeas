@@ -1,0 +1,32 @@
+{
+    "model_name": "XGBoost Vessel Activity Classifier (Trained on v6)",
+    "features": [
+        "p95_speed",
+        "p5_speed",
+        "med_speed",
+        "curviness",
+        "heading_mean",
+        "heading_std",
+        "turning_mean",
+        "turning_std",
+        "distance_total",
+        "distance_o"
+    ],
+    "params": {
+        "learning_rate": 0.01,
+        "max_depth": 10,
+        "n_estimators": 400
+    },
+    "cv_accuracy": 0.925301204819277,
+    "test_accuracy": 0.9132947976878613,
+    "label_mapping": {
+        "0": "drifting",
+        "1": "transit",
+        "2": "hook",
+        "3": "lobster",
+        "4": "stopped",
+        "5": "seine",
+        "6": "trawl"
+    },
+    "notes": "Trained on summary statistics of vessel tracks. Stratified 80:20 split. 5-fold CV."
+}
