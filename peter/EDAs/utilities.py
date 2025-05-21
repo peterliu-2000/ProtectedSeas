@@ -2,42 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pandas as pd
 
-class VesselTypeAggregator:
-    """
-    Aggregate vessel type based on defined categories from insights
-    """
-    
-    def __init__(self):
-        self.type_mapping = {
-            'tanker_ship': 'cargo/tanker',
-            'cargo_ship': 'cargo/tanker',
-            'tug': 'tug/tow',
-            'towing_ship': 'tug/tow',
-            'fishing_boat': 'fishing_boat',
-            'commercial_fishing_boat': 'fishing_boat',
-            'military_ship': 'military_ship',
-            'class_b':'class_b',
-            'passenger_ship': 'passenger_ship',
-            'pleasure_craft': 'pleasure_craft',
-            'sailboat': 'pleasure_craft',
-            'search_and_rescue_boat': 'other',
-            'pilot_boat': 'other',
-            'high_speed_craft': 'other',
-            'law_enforcement_boat': 'other',
-            'other': 'other',
-            'unknown': 'other'
-        }
-
-    def aggregate_vessel_type(self, df):
-        """
-        Args:
-            df: dataframe with 'type_m2' column
-        """
-
-        df['type_m2_agg'] = df['type_m2'].map(self.type_mapping).fillna('other')
-
-
-class TrajectoryPlotter:
+class SingleTrackPlotter:
     """
     Plot trajectory of a vessel
     """
@@ -52,23 +17,22 @@ class TrajectoryPlotter:
         """
         assert len(track_data['id_track'].unique()) == 1, "track_data must be associated with 1 track"
 
-        track_data['datetime'] = track_data['cdate'] + ' ' + track_data['ctime']
         track_id = track_data['id_track'].iloc[0]  # Ensure we grab the first element of the track id
 
         # Sort data by datetime
         track_data = track_data.sort_values('datetime')
 
         # Calculate duration
-        start_time = pd.to_datetime(track_data['ctime'].iloc[0], format='%H:%M:%S')
-        end_time = pd.to_datetime(track_data['ctime'].iloc[-1], format='%H:%M:%S')
+        start_time = track_data['datetime'].iloc[0]
+        end_time = track_data['datetime'].iloc[-1]
         duration = end_time - start_time
-        hours = duration.components.hours
-        minutes = duration.components.minutes
-        seconds = duration.components.seconds
+        total_seconds = int(duration.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
         duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
         # Create figure and axis for a single plot
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(7, 5))
 
         # Plot trajectory
         ax.plot(track_data['longitude'], track_data['latitude'], 
