@@ -27,7 +27,7 @@ NUM2TYPE = {
 TYPE2NUM = {v: k for k, v in NUM2TYPE.items()}
 N_TYPE = len(TYPES)
 
-#AIS Type Aggregation
+#Type m2 into type_m2_agg
 TYPES2AGG = {
             'tanker_ship': 'cargo/tanker',
             'cargo_ship': 'cargo/tanker',
@@ -47,3 +47,28 @@ TYPES2AGG = {
             'other': 'other',
             'unknown': 'other'
         }
+
+#AIS Type Code to type m2
+CODE2TYPE = {
+    **{i: 'other' for i in range(0, 20)},
+    **{i: 'wing_in_ground_effect' for i in range(20, 30)},
+    30: 'fishing_boat',
+    **{i: 'towing_ship' for i in range(31, 33)},
+    **{i: 'other' for i in range(33, 35)},
+    35: 'military_ship',
+    36: 'sailboat',
+    37: 'pleasure_craft',
+    **{i: 'other' for i in range(38, 40)},
+    **{i: 'high_speed_craft' for i in range(40, 50)},
+    50: 'pilot_boat',
+    51: 'search_and_rescue_boat',
+    52: 'tug',
+    53: 'port_tender',
+    54: 'other',
+    55: 'law_enforcement_boat',
+    **{i: 'other' for i in range(56, 60)},
+    **{i: 'passenger_ship' for i in range(60, 70)},
+    **{i: 'cargo_ship' for i in range(70, 80)},
+    **{i: 'tanker_ship' for i in range(80, 90)},
+    **{i: 'other' for i in range(90, 100)}
+}
