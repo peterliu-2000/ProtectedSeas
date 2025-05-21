@@ -66,8 +66,8 @@ mlruns/
 *.jpg
 *.png
 
-#paper
-papers/
+#pdf files
+*.pdf
 
 #
 *.docx

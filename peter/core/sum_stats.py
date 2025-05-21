@@ -64,7 +64,8 @@ class SumStatsBaseline:
         meanCos = np.mean(headingCos)
         meanSin = np.mean(headingSin)
         avg_heading = np.arctan2(meanSin, meanCos) * 180 / np.pi
-        std_heading = np.sqrt(-np.log(meanCos*meanCos + meanSin*meanSin))
+        R_squared = np.clip(meanCos**2 + meanSin**2, 1e-10, 1)
+        std_heading = np.sqrt(-np.log(R_squared))
         if std_heading == np.nan: std_heading = 0
         
         # Compute the mean and std of these trig vectors

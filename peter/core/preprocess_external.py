@@ -57,9 +57,9 @@ def preprocess_data(detections_path, print_mode = False):
     return non_disrupted_detections
 
 if __name__ == '__main__':
-    detections_path = '../../data/external_ais/AIS_2024_01_01.csv'
+    detections_path = '../../data/external_ais/AIS_2024_01_02.csv'
     preprocessed_detections = preprocess_data(detections_path, print_mode=True)
-    save_path = '../../data/external_ais/cleaned_AIS_2024_01_01.csv'
+    save_path = '../../data/external_ais/cleaned_AIS_2024_01_02.csv'
     preprocessed_detections.to_csv(save_path, index=False)
 
 
