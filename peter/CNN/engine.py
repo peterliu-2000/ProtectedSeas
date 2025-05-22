@@ -14,6 +14,7 @@ def train_model(model: nn.Module,
                 val_loader: DataLoader, 
                 optimizer: optim.Optimizer, 
                 device: torch.device,
+                start_epoch: int,
                 num_epochs: int,
                 scheduler: None, ) -> tuple[list[float], list[float], list[float], list[float]]:
     """
@@ -43,9 +44,7 @@ def train_model(model: nn.Module,
     datetime_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_name = f"{model_name}_{optimizer_name}_lr{lr}_sched_{scheduler_name}_epochs{num_epochs}_{datetime_str}"
     tensorboard_dir = os.path.join("tensorboard_logs", log_name)
-    tensorboard_dir = "tensorboard_logs/"
     writer = SummaryWriter(log_dir = tensorboard_dir)
-
 
     for epoch in range(num_epochs):
         model.train()
@@ -104,7 +103,7 @@ def train_model(model: nn.Module,
             best_val_loss = val_loss
             best_model_wts = copy.deepcopy(model.state_dict())
 
-        print(f"Epoch {epoch+1}/{num_epochs}")
+        print(f"Epoch {start_epoch+epoch+1}/{start_epoch+num_epochs}")
         print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f}")
         print(f"Val   Loss: {val_loss:.4f} | Val   Acc: {val_acc:.4f}")
 

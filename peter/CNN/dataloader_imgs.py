@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 import sys
 
+sys.path.append(os.path.abspath('..'))
 from core.DICT import  *
 
 # Random Seed

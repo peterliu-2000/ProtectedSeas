@@ -171,7 +171,7 @@ class VesselTrajectoryRasterize(TrajectoryRasterize):
 if __name__ == "__main__":
     radar_detections = pd.read_csv('../../data/cleaned_data/preprocessed_radar_detections.csv')
     tagged_detections = pd.read_csv('../../data/cleaned_data/preprocessed_tagged_detections.csv')
-    labels = pd.read_csv('../../data/labels/full_non_transit_radar_labels.csv')
+    labels = pd.read_csv('../../data/labels/full_non_transit_stopped_radar_labels.csv')
     print(len(labels['id_track'].unique()))
 
     full_detections = pd.concat([radar_detections, tagged_detections])
@@ -185,11 +185,9 @@ if __name__ == "__main__":
     save_path = 'nontransit_track_images/'
     track_ids = list(nontransit_detections["id_track"].unique())
 
-
-
-    # for id in tqdm(track_ids):
-    #     img = Image.fromarray(rasterizer(id))
-    #     img.save(save_path + f"{id}.jpg", quality=95)
+    for id in tqdm(track_ids):
+        img = Image.fromarray(rasterizer(id))
+        img.save(save_path + f"{id}.jpg", quality=95)
 
 
 # Uncomment to rasterize radar detections
