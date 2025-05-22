@@ -1,3 +1,20 @@
+## May 21, W7
+
+Non-transit/stopped tracks pipeline:
+* Use (cleaned) radar detections feed through activity XGboost model and generated inferred activity
+* Filter out all tracks predicted as transit & stopped with confidence score >= 0.5
+* Concat these tracks w/ labelled tagged detections tracks that are also not transit/stopped
+* So final dataset (1880 tracks) are from `tagged_detections` where manual labels are not transit/stopped and `radar_detections` where inferred labels are not transit/stopped
+* Additionally: if these `tagged_detections` are labelled as one of the fishing categories, label their `type_m2_agg` field as `fishing_boat`
+* Finally, trained another XGBoost on type classification, test set results: [link](peter/non_transit/type_classification.ipynb)
+
+Some Analysis on External AIS data source, looks promising with caveats
+[link](peter/EDAs/external_ais_EDA.ipynb)
+
+
+
+
+
 ## May 8, W6
 
 More on CNN architecture exploration:
