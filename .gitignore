@@ -72,5 +72,6 @@ mlruns/
 #
 *.docx
 
-#untrack all json files in peter
+#files to untrack in peter folder
 peter/**/*.json
+peter/CNN/tensorboard_logs/

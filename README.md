@@ -1,3 +1,7 @@
+## May 28, W8
+
+Goal: Start working on report
+
 ## May 21, W7
 
 Non-transit/stopped tracks pipeline:
@@ -11,17 +15,11 @@ Non-transit/stopped tracks pipeline:
 Some Analysis on External AIS data source, looks promising with caveats
 [link](peter/EDAs/external_ais_EDA.ipynb)
 
-
-
-
-
 ## May 8, W6
 
 More on CNN architecture exploration:
 * Tried using more than 3 input channels for track preprocess: counts, mean speed, mean turning, std speed, std turning. 
 * Performance degraded severely (~40% accuracy) as model collapses towards predicting the most common class
-
-(double check: AIS labelled 'class b' can be a fishing vessl)
 
 Next Steps:
 * **Main**: Rerun previous models on non-transit tracks predicted by activity-xgboost-model, see if anything new comes up
