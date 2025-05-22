@@ -13,7 +13,7 @@ Changes from track_rasterizer.py:
 # prevent image from being zoomed in too mcuh
 MIN_PIXEL_SPAN = 2.5e-5 
 
-class TrajectoryRasterize():
+class TrajectoryMatrixer():
     def __init__(self, matrix_width, matrix_height):
         """
         Initialize the TrackRasterizer with specified dimensions.
@@ -226,7 +226,7 @@ class TrajectoryRasterize():
             
         return matrix
 
-class VesselTrajectoryRasterize(TrajectoryRasterize):
+class VesselTrajectoryMatrixer(TrajectoryMatrixer):
     def __init__(self, matrix_width, matrix_height, trajectory_data: pd.DataFrame):
         super().__init__(matrix_width, matrix_height)
         self.data = trajectory_data
@@ -273,11 +273,11 @@ if __name__ == "__main__":
 
     MATRIX_WIDTH = 224
     MATRIX_HEIGHT = 224
-    rasterizer = VesselTrajectoryRasterize(MATRIX_WIDTH, MATRIX_HEIGHT, radar_detections)
+    matrixer = VesselTrajectoryMatrixer(MATRIX_WIDTH, MATRIX_HEIGHT, radar_detections)
     save_path = 'track_matrices/'
     track_ids = list(radar_detections["id_track"].unique())
 
     #Save matrix for ALL tracks
     for id in tqdm(track_ids):
-        matrix = rasterizer(id, speed_ceil=22.5, bias=True)
+        matrix = matrixer(id, speed_ceil=22.5, bias=True)
         torch.save(torch.from_numpy(matrix), save_path + f"{id}.pt")

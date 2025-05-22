@@ -5,6 +5,9 @@ import torch
 import copy
 from tqdm import tqdm
 import json
+from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
+import os
 
 def train_model(model: nn.Module, 
                 train_loader: DataLoader, 
@@ -30,6 +33,19 @@ def train_model(model: nn.Module,
 
     best_val_loss = float('inf')
     best_model_wts = copy.deepcopy(model.state_dict())
+    criterion = nn.CrossEntropyLoss()
+
+    #tensorboard logs:
+    model_name = model.__class__.__name__
+    optimizer_name = optimizer.__class__.__name__
+    lr = optimizer.param_groups[0]['lr']
+    scheduler_name = scheduler.__class__.__name__ if scheduler is not None else "None"
+    datetime_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_name = f"{model_name}_{optimizer_name}_lr{lr}_sched_{scheduler_name}_epochs{num_epochs}_{datetime_str}"
+    tensorboard_dir = os.path.join("tensorboard_logs", log_name)
+    tensorboard_dir = "tensorboard_logs/"
+    writer = SummaryWriter(log_dir = tensorboard_dir)
+
 
     for epoch in range(num_epochs):
         model.train()
@@ -41,7 +57,6 @@ def train_model(model: nn.Module,
             inputs, targets = inputs.to(device), targets.to(device) 
             optimizer.zero_grad()
             outputs = model(inputs)
-            criterion = nn.CrossEntropyLoss()
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()    
@@ -79,6 +94,12 @@ def train_model(model: nn.Module,
         VAL_LOSSES.append(val_loss)
         VAL_ACC.append(val_acc) 
 
+        # TensorBoard logging
+        writer.add_scalar("Loss/Train", train_loss, epoch)
+        writer.add_scalar("Loss/Validation", val_loss, epoch)
+        writer.add_scalar("Accuracy/Train", train_acc, epoch)
+        writer.add_scalar("Accuracy/Validation", val_acc, epoch)
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_model_wts = copy.deepcopy(model.state_dict())
@@ -88,6 +109,44 @@ def train_model(model: nn.Module,
         print(f"Val   Loss: {val_loss:.4f} | Val   Acc: {val_acc:.4f}")
 
     return TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_model_wts, best_val_loss
+
+def test_model(model: nn.Module,
+               test_loader: DataLoader,
+               device: torch.device,
+               loss_fn: nn.Module = nn.CrossEntropyLoss()) -> tuple[float, float]:
+    """
+    Evaluate the model on the test dataset.
+
+    Args:
+        model (nn.Module): Trained model to evaluate.
+        test_loader (DataLoader): DataLoader for test data.
+        device (torch.device): Device to run the evaluation on.
+        loss_fn (nn.Module): Loss function to use. Defaults to CrossEntropyLoss.
+
+    Returns:
+        test_loss (float): Average test loss.
+        test_acc (float): Average test accuracy.
+    """
+    model.eval()
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for inputs, targets in tqdm(test_loader, desc="Testing", leave=False):
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            loss = loss_fn(outputs, targets)
+            running_loss += loss.item() * inputs.size(0)
+            _, predicted = outputs.max(1)
+            correct += (predicted == targets).sum().item()
+            total += targets.size(0)
+
+    test_loss = running_loss / total
+    test_acc = correct / total
+
+    print(f"\nTest Loss: {test_loss:.4f} | Test Accuracy: {test_acc:.4f}")
+    return test_loss, test_acc
 
 def save_model(TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_val_loss, best_model_wts, model_name):
     """
