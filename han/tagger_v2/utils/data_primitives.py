@@ -56,9 +56,7 @@ def read_and_init_track_df(filename):
     df["predict_activity"] = [pd.NA] * df_length
     df["predict_score"] = [0] * df_length    
     
-        
-    # Only return relevant columns
-    return df[["id_track", "activity", "type_m2_agg", "valid", "predict_activity", "predict_score"]]
+    return df
 
 def read_and_init_detections_df(filename, save = True):
     """

@@ -18,7 +18,7 @@ import numpy as np
 import time
 
 pd.options.mode.copy_on_write = True
-
+DEBUG_MODE = True
 
 # Default Paths for quick loading
 # default_track = "../../data/type_label.csv"
@@ -835,6 +835,10 @@ class MainApp(tk.Tk):
             self.data_control_window.refresh()
         if self.model_window is not None:
             self.model_window.refresh()
+            
+        # Print out some debugging statistics
+        if DEBUG_MODE:
+            print(self.current_track_data)
         
     def save(self):
         """
