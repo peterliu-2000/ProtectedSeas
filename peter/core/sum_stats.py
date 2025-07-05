@@ -20,9 +20,9 @@ class SumStatsBaseline:
     """
 
     FEATURE_NAMES = [
-        "max_speed",
-        "min_speed",
-        "avg_speed",
+        "p95_speed",
+        "p5_speed",
+        "median_speed",
         "heading_mean",
         "heading_std",
         "turning_mean",
@@ -82,9 +82,9 @@ class SumStatsBaseline:
             "duration"       : group["datetime"].iloc[-1] - group["datetime"].iloc[0],
             "distance_total" : np.sum(group['distance_diff']),
             "detections"     : n_detect,
-            "max_speed"      : group["speed"].max(),
-            "min_speed"      : group["speed"].min(),
-            "avg_speed"      : group["speed"].mean(),
+            "p95_speed"      : np.percentile(group["speed"], 95),
+            "p5_speed"       : np.percentile(group["speed"], 5),
+            "median_speed"   : group["speed"].median(),
             "heading_mean"   : avg_heading,
             "heading_std"    : std_heading,
             "turning_mean"   : np.mean(turning),

@@ -1,13 +1,20 @@
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 import torch.optim as optim
 import torch.nn as nn
 import torch   
+import numpy as np
 import copy
 from tqdm import tqdm
 import json
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
-import os
+import os, sys
+
+sys.path.append(os.path.abspath('..'))
+from core.DICT import *
 
 def train_model(model: nn.Module, 
                 train_loader: DataLoader, 
@@ -108,44 +115,72 @@ def train_model(model: nn.Module,
         print(f"Val   Loss: {val_loss:.4f} | Val   Acc: {val_acc:.4f}")
 
     return TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_model_wts, best_val_loss
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
-def test_model(model: nn.Module,
-               test_loader: DataLoader,
-               device: torch.device,
-               loss_fn: nn.Module = nn.CrossEntropyLoss()) -> tuple[float, float]:
+def evaluate_model(model: nn.Module,
+                   test_loader,
+                   device: torch.device,
+                   NUM2TYPE: dict[str],
+                   loss_fn: nn.Module = nn.CrossEntropyLoss()) -> None:
     """
-    Evaluate the model on the test dataset.
+    Evaluate the model and print classification report + plot confusion matrices.
 
     Args:
         model (nn.Module): Trained model to evaluate.
         test_loader (DataLoader): DataLoader for test data.
         device (torch.device): Device to run the evaluation on.
-        loss_fn (nn.Module): Loss function to use. Defaults to CrossEntropyLoss.
-
-    Returns:
-        test_loss (float): Average test loss.
-        test_acc (float): Average test accuracy.
+        NUM2TYPE (dict): Mapping from class integers to readable string labels.
+        loss_fn (nn.Module): Loss function. Defaults to CrossEntropyLoss.
     """
     model.eval()
+    all_preds = []
+    all_targets = []
     running_loss = 0.0
-    correct = 0
     total = 0
 
     with torch.no_grad():
-        for inputs, targets in tqdm(test_loader, desc="Testing", leave=False):
+        for inputs, targets in tqdm(test_loader, desc="Evaluating", leave=False):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = model(inputs)
             loss = loss_fn(outputs, targets)
             running_loss += loss.item() * inputs.size(0)
-            _, predicted = outputs.max(1)
-            correct += (predicted == targets).sum().item()
+            _, predicted = torch.max(outputs, dim=1)
+            all_preds.extend(predicted.cpu().numpy())
+            all_targets.extend(targets.cpu().numpy())
             total += targets.size(0)
 
-    test_loss = running_loss / total
-    test_acc = correct / total
+    all_preds_str = [NUM2TYPE[p] for p in all_preds]
+    all_targets_str = [NUM2TYPE[t] for t in all_targets]
 
-    print(f"\nTest Loss: {test_loss:.4f} | Test Accuracy: {test_acc:.4f}")
-    return test_loss, test_acc
+    print("\nClassification Report:")
+    report = classification_report(all_targets_str, all_preds_str, digits=4)
+    print(report)
+
+    cm = confusion_matrix(all_targets_str, all_preds_str, labels=list(NUM2TYPE.values()))
+    cm_df = pd.DataFrame(cm, index=NUM2TYPE.values(), columns=NUM2TYPE.values())
+
+    plt.figure(figsize=(6, 4))
+    sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues')
+    plt.title("Confusion Matrix (Counts)")
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
+    plt.tight_layout()
+    plt.show()
+
+    cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+    cm_norm_df = pd.DataFrame(cm_norm, index=NUM2TYPE.values(), columns=NUM2TYPE.values())
+
+    plt.figure(figsize=(6, 4))
+    sns.heatmap(cm_norm_df, annot=True, fmt='.2f', cmap='Greens')
+    plt.title("Confusion Matrix (Sensitivity / Recall)")
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
+    plt.tight_layout()
+    plt.show()
+
 
 def save_model(TRAIN_LOSSES, TRAIN_ACC, VAL_LOSSES, VAL_ACC, best_val_loss, best_model_wts, model_name):
     """

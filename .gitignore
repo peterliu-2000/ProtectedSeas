@@ -75,3 +75,6 @@ mlruns/
 #files to untrack in peter folder
 peter/**/*.json
 peter/CNN/tensorboard_logs/
+
+#final video
+Final Video/

@@ -1,6 +1,8 @@
 ## May 28, W8
 
-Goal: Start working on report
+Features scaling before inputting into models?
+log-scaling on skewed distributions? (i remember area)
+
 
 ## May 21, W7
 
